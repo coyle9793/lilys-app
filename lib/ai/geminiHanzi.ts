@@ -1,4 +1,4 @@
-const DEFAULT_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_MODEL = "gemini-3-flash-preview";
 
 /**
  * Asks Gemini to convert a pinyin sentence to Simplified Chinese characters,
@@ -34,15 +34,23 @@ English translation: ${translation}`;
       },
     );
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`Gemini API error ${res.status} (model: ${model}):`, body);
+      return null;
+    }
 
     const data = await res.json();
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (typeof text !== "string") return null;
+    if (typeof text !== "string") {
+      console.error("Gemini response had no text:", JSON.stringify(data));
+      return null;
+    }
 
     const cleaned = text.trim();
     return cleaned || null;
-  } catch {
+  } catch (err) {
+    console.error("Gemini request failed:", err);
     return null;
   }
 }
