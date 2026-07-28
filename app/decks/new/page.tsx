@@ -26,6 +26,7 @@ export default function NewDeckPage() {
   const [deckTitle, setDeckTitle] = useState("");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [saving, setSaving] = useState(false);
+  const [guessingId, setGuessingId] = useState<string | null>(null);
 
   async function handleExtract() {
     if (files.length === 0) return;
@@ -83,6 +84,21 @@ export default function NewDeckPage() {
     setCandidates((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   }
 
+  async function guessCharacters(candidate: Candidate) {
+    setGuessingId(candidate.id);
+    try {
+      const res = await fetch("/api/suggest-hanzi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinyin: candidate.pinyin }),
+      });
+      const { hanzi } = (await res.json()) as { hanzi: string | null };
+      if (hanzi) updateCandidate(candidate.id, { hanzi });
+    } finally {
+      setGuessingId(null);
+    }
+  }
+
   function addBlankCandidate() {
     setCandidates((prev) => [
       { id: `manual-${Date.now()}`, hanzi: "", pinyin: "", definition: "", found: true, included: true },
@@ -111,8 +127,8 @@ export default function NewDeckPage() {
       <div className="mx-auto w-full max-w-3xl px-6 py-10">
         <h1 className="mb-4 text-2xl font-semibold">Review your flashcards</h1>
         <p className="mb-6 text-sm text-zinc-500">
-          We found {candidates.length} candidate words. Uncheck anything that doesn&apos;t
-          belong, fix any OCR mistakes, and add missing words before saving.
+          We found {candidates.length} candidate flashcards. Uncheck anything that
+          doesn&apos;t belong, fix any OCR mistakes, and add missing ones before saving.
         </p>
 
         <label className="mb-4 flex flex-col gap-1 text-sm">
@@ -132,36 +148,56 @@ export default function NewDeckPage() {
         </button>
 
         <div className="flex flex-col gap-2">
-          {candidates.map((c) => (
-            <div
-              key={c.id}
-              className={`grid grid-cols-[auto_1fr_1fr_2fr] items-center gap-2 rounded-md border p-2 ${
-                c.found ? "border-black/10 dark:border-white/10" : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={c.included}
-                onChange={(e) => updateCandidate(c.id, { included: e.target.checked })}
-              />
-              <input
-                value={c.hanzi}
-                onChange={(e) => updateCandidate(c.id, { hanzi: e.target.value })}
-                className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
-              />
-              <input
-                value={c.pinyin}
-                onChange={(e) => updateCandidate(c.id, { pinyin: e.target.value })}
-                className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
-              />
-              <input
-                value={c.definition}
-                onChange={(e) => updateCandidate(c.id, { definition: e.target.value })}
-                className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
-              />
-            </div>
-          ))}
+          {candidates.map((c) => {
+            const isPinyinOnly = c.pinyin.length > 0 && c.hanzi === c.pinyin;
+            return (
+              <div
+                key={c.id}
+                className={`grid grid-cols-[auto_1fr_1fr_2fr_auto] items-center gap-2 rounded-md border p-2 ${
+                  c.found ? "border-black/10 dark:border-white/10" : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={c.included}
+                  onChange={(e) => updateCandidate(c.id, { included: e.target.checked })}
+                />
+                <input
+                  value={c.hanzi}
+                  onChange={(e) => updateCandidate(c.id, { hanzi: e.target.value })}
+                  className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
+                />
+                <input
+                  value={c.pinyin}
+                  onChange={(e) => updateCandidate(c.id, { pinyin: e.target.value })}
+                  className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
+                />
+                <input
+                  value={c.definition}
+                  onChange={(e) => updateCandidate(c.id, { definition: e.target.value })}
+                  className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
+                />
+                {isPinyinOnly ? (
+                  <button
+                    onClick={() => guessCharacters(c)}
+                    disabled={guessingId === c.id}
+                    title="Best-effort guess only — Chinese has many same-sounding characters, so this is often wrong. Always check it."
+                    className="whitespace-nowrap rounded-md border border-dashed border-black/20 px-2 py-1 text-xs text-zinc-500 disabled:opacity-50 dark:border-white/20"
+                  >
+                    {guessingId === c.id ? "Guessing…" : "Guess 汉字*"}
+                  </button>
+                ) : (
+                  <span />
+                )}
+              </div>
+            );
+          })}
         </div>
+        <p className="mt-2 text-xs text-zinc-400">
+          * Character guesses are experimental best-effort matches, not a reliable
+          conversion — Chinese has many characters that share the same pronunciation,
+          so always double-check a guess before trusting it.
+        </p>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 

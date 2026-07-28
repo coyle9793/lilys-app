@@ -1,8 +1,22 @@
+import { isFullyPinyinSyllables } from "./reversePinyin";
+
 const TONE_MARK =
   /[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜĀÁǍÀĒÉĚÈĪÍǎÌŌÓǑÒŪÚǓÙǕǗǙǛ]/;
 
+/**
+ * A line "looks like pinyin" if it has tone-mark diacritics (a strong, fast
+ * signal), or — since OCR of photographed pages very often loses those small
+ * marks — if most of its words can be fully split into known Mandarin
+ * syllables even without tone marks.
+ */
 function looksLikePinyin(line: string): boolean {
-  return TONE_MARK.test(line);
+  if (TONE_MARK.test(line)) return true;
+
+  const words = line.match(/[a-zA-Zü]+/g) ?? [];
+  if (words.length < 2) return false;
+
+  const matching = words.filter((w) => isFullyPinyinSyllables(w)).length;
+  return matching / words.length >= 0.6;
 }
 
 function looksLikeHeading(line: string): boolean {
@@ -36,10 +50,18 @@ export function extractPinyinSentencePairs(text: string): SentencePair[] {
   while (i < lines.length) {
     const line = lines[i];
     const next = lines[i + 1];
+    // Strip "Q:"/"A:" labels before checking the pinyin ratio — otherwise the
+    // single leftover letter ("Q", "A") counts against the line's word ratio.
+    const source = stripLabel(line);
+    const translation = next ? stripLabel(next) : undefined;
 
-    if (!looksLikeHeading(line) && looksLikePinyin(line) && next && !looksLikePinyin(next) && !looksLikeHeading(next)) {
-      const source = stripLabel(line);
-      const translation = stripLabel(next);
+    if (
+      !looksLikeHeading(line) &&
+      looksLikePinyin(source) &&
+      translation &&
+      !looksLikePinyin(translation) &&
+      !looksLikeHeading(translation)
+    ) {
       if (source && translation && !seen.has(source)) {
         seen.set(source, { source, translation });
       }
