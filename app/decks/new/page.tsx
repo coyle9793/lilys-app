@@ -235,9 +235,9 @@ export default function NewDeckPage() {
     <div className="mx-auto w-full max-w-2xl px-6 py-10">
       <h1 className="mb-2 text-2xl font-semibold">Import slides</h1>
       <p className="mb-6 text-sm text-zinc-500">
-        Upload PowerPoint (.pptx), PDF, or photos/screenshots of your slides. Text is
-        extracted right in your browser, then looked up in CC-CEDICT for pinyin and
-        definitions.
+        Upload PowerPoint (.pptx), Word (.docx), PDF, or photos/screenshots of your
+        slides. Text is extracted right in your browser, then looked up in CC-CEDICT
+        for pinyin and definitions.
       </p>
 
       <div className="flex flex-col gap-4">
@@ -246,7 +246,7 @@ export default function NewDeckPage() {
           <input
             type="file"
             multiple
-            accept=".pptx,.pdf,image/*"
+            accept=".pptx,.docx,.pdf,image/*"
             onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
             className="rounded-md border border-black/15 px-3 py-2 dark:border-white/15"
           />

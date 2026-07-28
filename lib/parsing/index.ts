@@ -1,4 +1,5 @@
 import { extractPptxText } from "./pptx";
+import { extractDocxText } from "./docx";
 import { extractPdfText, type PdfExtractionOptions } from "./pdf";
 import { ocrImage, type ChineseVariant } from "./ocr";
 
@@ -19,6 +20,10 @@ export async function extractTextFromFile(
     return { sections: await extractPptxText(file) };
   }
 
+  if (name.endsWith(".docx")) {
+    return { sections: await extractDocxText(file) };
+  }
+
   if (name.endsWith(".pdf")) {
     return { sections: await extractPdfText(file, options) };
   }
@@ -29,7 +34,14 @@ export async function extractTextFromFile(
     return { sections: [text] };
   }
 
+  if (name.endsWith(".doc")) {
+    throw new Error(
+      `"${file.name}" is an old-style .doc file, which isn't supported — open it in Word ` +
+        "and save/export it as .docx (or PDF), then upload that instead.",
+    );
+  }
+
   throw new Error(
-    `Unsupported file type: "${file.name}". Please upload a .pptx, .pdf, or image file.`,
+    `Unsupported file type: "${file.name}". Please upload a .pptx, .docx, .pdf, or image file.`,
   );
 }
