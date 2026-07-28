@@ -10,6 +10,7 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
   const [step, setStep] = useState<Step>("setup");
   const [questionCount, setQuestionCount] = useState(10);
   const [exampleFormatText, setExampleFormatText] = useState("");
+  const [markingCriteria, setMarkingCriteria] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
@@ -42,7 +43,7 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
       const res = await fetch("/api/generate-exam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deckId, questionCount, exampleFormatText }),
+        body: JSON.stringify({ deckId, questionCount, exampleFormatText, markingCriteria }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Couldn't generate the exam.");
@@ -112,6 +113,17 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
         />
         {extracting && <p className="text-sm text-zinc-500">Reading file…</p>}
 
+        <label className="flex flex-col gap-1 text-sm">
+          Marking criteria (optional)
+          <textarea
+            value={markingCriteria}
+            onChange={(e) => setMarkingCriteria(e.target.value)}
+            rows={4}
+            placeholder="Paste your teacher's marking criteria/rubric here to have written responses graded against it…"
+            className="rounded-md border border-black/15 px-3 py-2 text-sm dark:border-white/15"
+          />
+        </label>
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button
@@ -160,7 +172,12 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
         Question {index + 1} / {exam.questions.length} · Estimated level: {exam.level}
       </p>
       {question.type === "writing_task" ? (
-        <WritingTaskCard key={index} question={question} onResult={recordResult} />
+        <WritingTaskCard
+          key={index}
+          question={question}
+          markingCriteria={exam.markingCriteria}
+          onResult={recordResult}
+        />
       ) : (
         <QuestionCard
           key={index}
@@ -289,9 +306,11 @@ function QuestionCard({
 /** Reading passage + free-form written response (e.g. "write a reply letter"), AI-graded. */
 function WritingTaskCard({
   question,
+  markingCriteria,
   onResult,
 }: {
   question: ExamQuestion;
+  markingCriteria?: string;
   onResult: (correct: boolean) => void;
 }) {
   const [response, setResponse] = useState("");
@@ -313,6 +332,7 @@ function WritingTaskCard({
           passage: question.passage ?? "",
           taskPrompt: question.prompt,
           studentResponse: response,
+          markingCriteria,
         }),
       });
       const data = await res.json();

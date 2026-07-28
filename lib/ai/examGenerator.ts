@@ -23,6 +23,8 @@ export interface ExamQuestion {
 export interface GeneratedExam {
   level: string;
   questions: ExamQuestion[];
+  /** Marking criteria the user supplied, carried through so writing_task answers can be graded against it. */
+  markingCriteria?: string;
 }
 
 const MAX_VOCAB_CARDS = 150;
@@ -66,6 +68,7 @@ export async function generateExam(
   cards: Card[],
   questionCount: number,
   exampleFormatText?: string,
+  markingCriteria?: string,
 ): Promise<GeneratedExam | null> {
   const vocabList = cards
     .slice(0, MAX_VOCAB_CARDS)
@@ -76,13 +79,17 @@ export async function generateExam(
     ? `Here is an example of the exam question format/style to match:\n"""\n${exampleFormatText.trim().slice(0, 4000)}\n"""\nGenerate new questions in a similar style and structure to this example (e.g. if it's a reading-passage-plus-written-reply task, produce that same structure), but do not reuse its exact content — write a fresh passage/questions appropriate for the student's level.`
     : "No example format was given — use a natural mix of question types appropriate for a language exam.";
 
+  const criteriaSection = markingCriteria?.trim()
+    ? `\nMarking criteria the student's teacher uses:\n"""\n${markingCriteria.trim().slice(0, 2000)}\n"""\nKeep this in mind when writing "writing_task" prompts/passages and model answers, so the task is actually assessable against these criteria.\n`
+    : "";
+
   const prompt = `You are creating a Chinese language exam for a student, based on vocabulary they have studied.
 
 Vocabulary the student has studied (Hanzi | Pinyin | English):
 ${vocabList}
 
 ${formatSection}
-
+${criteriaSection}
 Based on the vocabulary above, estimate the student's approximate proficiency level (e.g. "Beginner (approx. HSK 1)") and generate exactly ${questionCount} exam questions appropriate for that level.
 
 For "multiple_choice", "translate_to_english", "translate_to_chinese", "fill_in_blank", and "short_answer" questions, use ONLY the vocabulary listed above.
@@ -118,7 +125,7 @@ Respond with ONLY valid JSON (no markdown, no code fences, no explanation) match
       console.error("Generated exam had no valid questions:", raw);
       return null;
     }
-    return { level: parsed.level, questions };
+    return { level: parsed.level, questions, markingCriteria: markingCriteria?.trim() || undefined };
   } catch (err) {
     console.error("Failed to parse generated exam JSON:", err, raw);
     return null;

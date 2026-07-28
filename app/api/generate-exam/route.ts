@@ -23,6 +23,8 @@ export async function POST(request: Request) {
   const questionCount = Number(body?.questionCount) || 10;
   const exampleFormatText =
     typeof body?.exampleFormatText === "string" ? body.exampleFormatText : undefined;
+  const markingCriteria =
+    typeof body?.markingCriteria === "string" ? body.markingCriteria : undefined;
   if (!deckId) return NextResponse.json({ error: "Missing deckId" }, { status: 400 });
 
   const result = await getDeckWithCards(supabase, deckId);
@@ -37,6 +39,7 @@ export async function POST(request: Request) {
     result.cards,
     Math.min(Math.max(questionCount, 1), 30),
     exampleFormatText,
+    markingCriteria,
   );
   if (!exam) {
     return NextResponse.json(
