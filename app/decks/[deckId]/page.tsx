@@ -32,6 +32,12 @@ export default async function DeckPage({
         >
           Study this deck
         </Link>
+        <Link
+          href={`/decks/${deck.id}/exam`}
+          className="rounded-md border border-black/15 px-4 py-2 text-sm dark:border-white/15"
+        >
+          Generate exam
+        </Link>
       </div>
 
       {cards.length === 0 ? (

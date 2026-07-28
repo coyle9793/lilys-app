@@ -1,8 +1,8 @@
 # 汉字 Flashcards
 
-Turn Chinese class slides (PowerPoint, PDF, or photos) into flashcards, then study
-them with flip cards, multiple choice, typing quizzes, and spaced repetition —
-free, with your decks synced to your account.
+Turn Chinese class slides (PowerPoint, Word, PDF, or photos) into flashcards, then
+study them with flip cards, multiple choice, typing quizzes, spaced repetition, and
+AI-generated leveled exams — free, with your decks synced to your account.
 
 ## Setup
 
@@ -55,6 +55,15 @@ among homophones (e.g. 是 "is" vs. 十 "ten" vs. 室 "room", all read "shi").
 removes the free tier entirely, even for calls that would've fit inside it.
 The free tier has modest rate limits (per-model requests per minute/day), which
 is plenty for reviewing one deck at a time.
+
+The same key also powers **"Generate exam"** on a deck's page: it estimates a
+rough level from that deck's vocabulary and writes a mix of question types
+(multiple choice, translation, fill-in-the-blank), optionally matching the
+style of a previous exam you paste in or upload. Free-text answers are
+self-graded (you compare your answer to the revealed correct one and mark
+yourself right/wrong), since there's no reliable way to auto-grade open text.
+Both the level estimate and the questions are AI-generated, not a certified
+assessment — treat them as a helpful guide.
 
 ## How it works
 
