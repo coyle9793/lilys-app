@@ -12,7 +12,7 @@ export function hasGeminiKey(): boolean {
  */
 export async function callGemini(
   prompt: string,
-  { maxOutputTokens = 200 }: { maxOutputTokens?: number } = {},
+  { maxOutputTokens = 200, timeoutMs = 30_000 }: { maxOutputTokens?: number; timeoutMs?: number } = {},
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -29,7 +29,7 @@ export async function callGemini(
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0, maxOutputTokens },
         }),
-        signal: AbortSignal.timeout(30_000),
+        signal: AbortSignal.timeout(timeoutMs),
       },
     );
 

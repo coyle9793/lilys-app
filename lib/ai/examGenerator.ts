@@ -111,7 +111,7 @@ Respond with ONLY valid JSON (no markdown, no code fences, no explanation) match
   ]
 }`;
 
-  const raw = await callGemini(prompt, { maxOutputTokens: 6000 });
+  const raw = await callGemini(prompt, { maxOutputTokens: 6000, timeoutMs: 75_000 });
   if (!raw) return null;
 
   try {
