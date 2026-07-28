@@ -57,8 +57,8 @@ export async function extractPdfText(
     const page = await doc.getPage(pageNum);
     const textContent = await page.getTextContent();
     const layerText = textContent.items
-      .map((item) => ("str" in item ? item.str : ""))
-      .join(" ");
+      .map((item) => ("str" in item ? item.str + (item.hasEOL ? "\n" : "") : ""))
+      .join("");
 
     if (countHanChars(layerText) >= 2) {
       onProgress?.({ page: pageNum, totalPages: doc.numPages, ocr: false });

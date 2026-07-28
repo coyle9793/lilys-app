@@ -27,9 +27,14 @@ export async function extractPptxText(file: File): Promise<string[]> {
   const slideTexts: string[] = [];
   for (const name of slideFiles) {
     const xml = await zip.files[name].async("text");
-    const matches = xml.matchAll(/<a:t>([^<]*)<\/a:t>/g);
-    const text = [...matches].map((m) => decodeXmlEntities(m[1])).join(" ");
-    slideTexts.push(text);
+    // Join runs within a paragraph (<a:p>) with no separator (they're often split
+    // mid-word for formatting), and separate paragraphs with newlines so line-based
+    // parsing (e.g. pinyin/translation pairs) can find sentence boundaries.
+    const paragraphs = xml.match(/<a:p>[\s\S]*?<\/a:p>/g) ?? [];
+    const lines = paragraphs
+      .map((p) => [...p.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => decodeXmlEntities(m[1])).join(""))
+      .filter((line) => line.trim() !== "");
+    slideTexts.push(lines.join("\n"));
   }
 
   return slideTexts;
