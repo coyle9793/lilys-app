@@ -28,6 +28,34 @@ By default Supabase requires email confirmation for new accounts — you can tur
 this off for personal use in Authentication → Providers → Email → "Confirm
 email" in your Supabase dashboard, or check your inbox for the confirmation link.
 
+### Optional: accurate character guessing with a free Gemini API key
+
+Material with no Hanzi at all (pinyin+English Q&A sheets, photos where OCR only
+picks up the romanization) gets an experimental **"Guess 汉字"** button per card
+on the review screen. Without any extra setup this falls back to a plain
+dictionary lookup, which is frequently wrong — Chinese has many characters that
+sound identical, and there's no way to pick the right one from pinyin alone
+without understanding the sentence.
+
+To make these guesses actually reliable, get a free Gemini API key (no credit
+card required):
+
+1. Go to [Google AI Studio](https://aistudio.google.com/) and sign in.
+2. Create an API key (usually under "Get API key").
+3. Add it to `.env.local`:
+   ```
+   GEMINI_API_KEY=your-key-here
+   ```
+4. Restart `npm run dev`.
+
+With a key configured, guesses are sent to Gemini's free tier along with the
+card's English translation as context, so it can pick the correct character
+among homophones (e.g. 是 "is" vs. 十 "ten" vs. 室 "room", all read "shi").
+**Don't add a billing method to the Google Cloud project** — enabling billing
+removes the free tier entirely, even for calls that would've fit inside it.
+The free tier has modest rate limits (per-model requests per minute/day), which
+is plenty for reviewing one deck at a time.
+
 ## How it works
 
 - **Import**: upload a `.pptx`, `.pdf`, or image. Text is extracted right in your

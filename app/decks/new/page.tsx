@@ -12,6 +12,7 @@ interface Candidate {
   definition: string;
   found: boolean;
   included: boolean;
+  guessSource?: "ai" | "dictionary" | null;
 }
 
 type Step = "upload" | "processing" | "review";
@@ -90,10 +91,13 @@ export default function NewDeckPage() {
       const res = await fetch("/api/suggest-hanzi", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pinyin: candidate.pinyin }),
+        body: JSON.stringify({ pinyin: candidate.pinyin, translation: candidate.definition }),
       });
-      const { hanzi } = (await res.json()) as { hanzi: string | null };
-      if (hanzi) updateCandidate(candidate.id, { hanzi });
+      const { hanzi, source } = (await res.json()) as {
+        hanzi: string | null;
+        source: "ai" | "dictionary" | null;
+      };
+      if (hanzi) updateCandidate(candidate.id, { hanzi, guessSource: source });
     } finally {
       setGuessingId(null);
     }
@@ -162,11 +166,19 @@ export default function NewDeckPage() {
                   checked={c.included}
                   onChange={(e) => updateCandidate(c.id, { included: e.target.checked })}
                 />
-                <input
-                  value={c.hanzi}
-                  onChange={(e) => updateCandidate(c.id, { hanzi: e.target.value })}
-                  className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
-                />
+                <div className="flex flex-col gap-0.5">
+                  <input
+                    value={c.hanzi}
+                    onChange={(e) => updateCandidate(c.id, { hanzi: e.target.value, guessSource: undefined })}
+                    className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
+                  />
+                  {c.guessSource === "ai" && (
+                    <span className="text-[10px] text-blue-500">AI guess — check it</span>
+                  )}
+                  {c.guessSource === "dictionary" && (
+                    <span className="text-[10px] text-amber-600">rough guess — likely wrong</span>
+                  )}
+                </div>
                 <input
                   value={c.pinyin}
                   onChange={(e) => updateCandidate(c.id, { pinyin: e.target.value })}
@@ -194,9 +206,11 @@ export default function NewDeckPage() {
           })}
         </div>
         <p className="mt-2 text-xs text-zinc-400">
-          * Character guesses are experimental best-effort matches, not a reliable
-          conversion — Chinese has many characters that share the same pronunciation,
-          so always double-check a guess before trusting it.
+          * Character guesses are best-effort, not guaranteed correct — Chinese has
+          many characters that share the same pronunciation. If a free Gemini API key
+          is configured (see README), guesses use AI with the English translation as
+          context and are usually right; without one, guesses fall back to a plain
+          dictionary lookup and are frequently wrong. Always check before trusting.
         </p>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
