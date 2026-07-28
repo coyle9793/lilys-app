@@ -159,17 +159,21 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
       <p className="text-sm text-zinc-500">
         Question {index + 1} / {exam.questions.length} · Estimated level: {exam.level}
       </p>
-      <QuestionCard
-        key={index}
-        question={question}
-        selected={selected}
-        setSelected={setSelected}
-        freeText={freeText}
-        setFreeText={setFreeText}
-        checked={checked}
-        setChecked={setChecked}
-        onResult={recordResult}
-      />
+      {question.type === "writing_task" ? (
+        <WritingTaskCard key={index} question={question} onResult={recordResult} />
+      ) : (
+        <QuestionCard
+          key={index}
+          question={question}
+          selected={selected}
+          setSelected={setSelected}
+          freeText={freeText}
+          setFreeText={setFreeText}
+          checked={checked}
+          setChecked={setChecked}
+          onResult={recordResult}
+        />
+      )}
     </div>
   );
 }
@@ -276,6 +280,105 @@ function QuestionCard({
               No
             </button>
           </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Reading passage + free-form written response (e.g. "write a reply letter"), AI-graded. */
+function WritingTaskCard({
+  question,
+  onResult,
+}: {
+  question: ExamQuestion;
+  onResult: (correct: boolean) => void;
+}) {
+  const [response, setResponse] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState<{ meetsRequirements: boolean; feedback: string } | null>(null);
+
+  const charCount = response.replace(/\s/g, "").length;
+
+  async function handleSubmit() {
+    if (!response.trim()) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/grade-writing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          passage: question.passage ?? "",
+          taskPrompt: question.prompt,
+          studentResponse: response,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Couldn't get feedback.");
+      setFeedback(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't get feedback.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {question.passage && (
+        <div className="whitespace-pre-wrap rounded-xl border border-black/10 bg-white p-6 dark:border-white/10 dark:bg-zinc-900">
+          {question.passage}
+        </div>
+      )}
+      <div className="rounded-md border border-black/10 p-3 text-sm dark:border-white/10">
+        {question.prompt}
+        {question.targetLength && (
+          <span className="text-zinc-500"> (target: {question.targetLength})</span>
+        )}
+      </div>
+
+      <textarea
+        value={response}
+        onChange={(e) => setResponse(e.target.value)}
+        disabled={Boolean(feedback)}
+        rows={8}
+        placeholder="Write your response in Chinese…"
+        className="rounded-md border border-black/15 px-3 py-2 text-sm dark:border-white/15"
+      />
+      <p className="text-xs text-zinc-500">{charCount} characters</p>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {!feedback ? (
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || !response.trim()}
+          className="self-start rounded-md bg-foreground px-4 py-2 text-sm text-background disabled:opacity-60"
+        >
+          {submitting ? "Getting feedback…" : "Submit for feedback"}
+        </button>
+      ) : (
+        <>
+          <div
+            className={`rounded-md border p-3 text-sm ${
+              feedback.meetsRequirements
+                ? "border-green-500 bg-green-50 dark:bg-green-950/40"
+                : "border-amber-400 bg-amber-50 dark:bg-amber-950/40"
+            }`}
+          >
+            <p className="mb-1 font-medium">
+              {feedback.meetsRequirements ? "Meets the task" : "Needs some work"}
+            </p>
+            <p>{feedback.feedback}</p>
+          </div>
+          <button
+            onClick={() => onResult(feedback.meetsRequirements)}
+            className="self-start rounded-md bg-foreground px-4 py-2 text-sm text-background"
+          >
+            Next
+          </button>
         </>
       )}
     </div>
