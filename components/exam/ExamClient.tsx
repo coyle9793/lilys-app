@@ -2,12 +2,37 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { ExamQuestion, GeneratedExam } from "@/lib/ai/examGenerator";
+import type { ExamMode, ExamQuestion, GeneratedExam } from "@/lib/ai/examGenerator";
 
 type Step = "setup" | "taking" | "results";
 
+const MODE_OPTIONS: { value: ExamMode; label: string; description: string }[] = [
+  {
+    value: "questions",
+    label: "Questions",
+    description: "Short translate/fill-in-the-blank style questions, self-graded.",
+  },
+  {
+    value: "multiple_choice",
+    label: "Multiple choice",
+    description: "Pick the correct answer from 4 options.",
+  },
+  {
+    value: "reading",
+    label: "Reading & writing",
+    description: "Read a passage (e.g. a letter) and write a reply, graded by AI feedback.",
+  },
+];
+
+const COUNT_OPTIONS: Record<ExamMode, number[]> = {
+  questions: [5, 10, 15, 20],
+  multiple_choice: [5, 10, 15, 20],
+  reading: [1, 2, 3, 5],
+};
+
 export default function ExamClient({ deckId, cardCount }: { deckId: string; cardCount: number }) {
   const [step, setStep] = useState<Step>("setup");
+  const [mode, setMode] = useState<ExamMode>("questions");
   const [questionCount, setQuestionCount] = useState(10);
   const [exampleFormatText, setExampleFormatText] = useState("");
   const [markingCriteria, setMarkingCriteria] = useState("");
@@ -36,6 +61,11 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
     }
   }
 
+  function handleModeChange(next: ExamMode) {
+    setMode(next);
+    setQuestionCount(COUNT_OPTIONS[next][COUNT_OPTIONS[next].length > 1 ? 1 : 0]);
+  }
+
   async function handleGenerate() {
     setGenerating(true);
     setError("");
@@ -43,7 +73,7 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
       const res = await fetch("/api/generate-exam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deckId, questionCount, exampleFormatText, markingCriteria }),
+        body: JSON.stringify({ deckId, questionCount, mode, exampleFormatText, markingCriteria }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Couldn't generate the exam.");
@@ -80,6 +110,29 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
           not a certified score.
         </p>
 
+        <div className="flex flex-col gap-2 text-sm">
+          Exam type
+          <div className="flex flex-wrap gap-2">
+            {MODE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleModeChange(opt.value)}
+                className={`rounded-md border px-3 py-1.5 text-sm ${
+                  mode === opt.value
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-black/15 dark:border-white/15"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-zinc-500">
+            {MODE_OPTIONS.find((opt) => opt.value === mode)?.description}
+          </p>
+        </div>
+
         <label className="flex flex-col gap-1 text-sm">
           Number of questions
           <select
@@ -87,7 +140,7 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
             onChange={(e) => setQuestionCount(Number(e.target.value))}
             className="w-32 rounded-md border border-black/15 px-2 py-1.5 dark:border-white/15"
           >
-            {[5, 10, 15, 20].map((n) => (
+            {COUNT_OPTIONS[mode].map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
