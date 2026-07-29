@@ -48,7 +48,7 @@ Respond with ONLY valid JSON (no markdown, no code fences, no explanation) match
   "feedback": "<2-4 sentences of feedback>"
 }`;
 
-  const raw = await callGemini(prompt, { maxOutputTokens: 1000, timeoutMs: 45_000 });
+  const raw = await callGemini(prompt, { maxOutputTokens: 2500, timeoutMs: 45_000 });
   if (!raw) return null;
 
   try {
