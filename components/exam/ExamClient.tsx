@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { ExamMode, ExamQuestion, GeneratedExam } from "@/lib/ai/examGenerator";
+import { classifyMark, type WritingFeedback } from "@/lib/ai/writingScore";
 
 type Step = "setup" | "taking" | "results";
 
@@ -46,6 +47,7 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
   const [freeText, setFreeText] = useState("");
   const [checked, setChecked] = useState(false);
   const [results, setResults] = useState<boolean[]>([]);
+  const [writingScores, setWritingScores] = useState<number[]>([]);
 
   async function handleExampleFile(file: File) {
     setExtracting(true);
@@ -88,8 +90,7 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
     }
   }
 
-  function recordResult(correct: boolean) {
-    setResults((prev) => [...prev, correct]);
+  function advance() {
     setSelected(null);
     setFreeText("");
     setChecked(false);
@@ -98,6 +99,16 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
     } else {
       setIndex((i) => i + 1);
     }
+  }
+
+  function recordResult(correct: boolean) {
+    setResults((prev) => [...prev, correct]);
+    advance();
+  }
+
+  function recordWritingScore(score: number) {
+    setWritingScores((prev) => [...prev, score]);
+    advance();
   }
 
   if (step === "setup") {
@@ -172,7 +183,7 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
             value={markingCriteria}
             onChange={(e) => setMarkingCriteria(e.target.value)}
             rows={4}
-            placeholder="Paste your teacher's marking criteria/rubric here to have written responses graded against it…"
+            placeholder="Writing responses are marked out of 100 on a UK-university-style scheme (content, coherence, language, accuracy, characters) by default. Paste your own rubric here to override it…"
             className="rounded-md border border-black/15 px-3 py-2 text-sm dark:border-white/15"
           />
         </label>
@@ -192,11 +203,21 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
 
   if (step === "results") {
     const score = results.filter(Boolean).length;
+    const avgMark = writingScores.length
+      ? Math.round(writingScores.reduce((a, b) => a + b, 0) / writingScores.length)
+      : 0;
     return (
       <div className="flex flex-col items-center gap-4 py-12">
-        <p className="text-lg font-medium">
-          You scored {score} / {results.length}
-        </p>
+        {mode === "reading" ? (
+          <>
+            <p className="text-lg font-medium">Average mark: {avgMark} / 100</p>
+            <p className="text-sm text-zinc-500">{classifyMark(avgMark)}</p>
+          </>
+        ) : (
+          <p className="text-lg font-medium">
+            You scored {score} / {results.length}
+          </p>
+        )}
         {exam && <p className="text-sm text-zinc-500">Estimated level: {exam.level}</p>}
         <div className="flex gap-3">
           <button
@@ -229,7 +250,7 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
           key={index}
           question={question}
           markingCriteria={exam.markingCriteria}
-          onResult={recordResult}
+          onScored={recordWritingScore}
         />
       ) : (
         <QuestionCard
@@ -356,20 +377,28 @@ function QuestionCard({
   );
 }
 
+const SCORE_LABELS: [key: keyof WritingFeedback["scores"], label: string][] = [
+  ["content", "Content"],
+  ["coherence", "Coherence"],
+  ["language", "Language"],
+  ["accuracy", "Accuracy"],
+  ["characters", "Characters"],
+];
+
 /** Reading passage + free-form written response (e.g. "write a reply letter"), AI-graded. */
 function WritingTaskCard({
   question,
   markingCriteria,
-  onResult,
+  onScored,
 }: {
   question: ExamQuestion;
   markingCriteria?: string;
-  onResult: (correct: boolean) => void;
+  onScored: (score: number) => void;
 }) {
   const [response, setResponse] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [feedback, setFeedback] = useState<{ meetsRequirements: boolean; feedback: string } | null>(null);
+  const [feedback, setFeedback] = useState<WritingFeedback | null>(null);
 
   const charCount = response.replace(/\s/g, "").length;
 
@@ -436,18 +465,27 @@ function WritingTaskCard({
         <>
           <div
             className={`rounded-md border p-3 text-sm ${
-              feedback.meetsRequirements
+              feedback.score >= 60
                 ? "border-green-500 bg-green-50 dark:bg-green-950/40"
-                : "border-amber-400 bg-amber-50 dark:bg-amber-950/40"
+                : feedback.score >= 40
+                  ? "border-amber-400 bg-amber-50 dark:bg-amber-950/40"
+                  : "border-red-500 bg-red-50 dark:bg-red-950/40"
             }`}
           >
-            <p className="mb-1 font-medium">
-              {feedback.meetsRequirements ? "Meets the task" : "Needs some work"}
+            <p className="mb-2 font-medium">
+              {feedback.score} / 100 — {feedback.classification}
             </p>
+            <ul className="mb-2 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-zinc-600 dark:text-zinc-400">
+              {SCORE_LABELS.map(([key, label]) => (
+                <li key={key}>
+                  {label}: {feedback.scores[key]}
+                </li>
+              ))}
+            </ul>
             <p>{feedback.feedback}</p>
           </div>
           <button
-            onClick={() => onResult(feedback.meetsRequirements)}
+            onClick={() => onScored(feedback.score)}
             className="self-start rounded-md bg-foreground px-4 py-2 text-sm text-background"
           >
             Next
