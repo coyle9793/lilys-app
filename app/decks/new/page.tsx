@@ -15,7 +15,14 @@ interface Candidate {
   guessSource?: "ai" | "dictionary" | null;
 }
 
-type Step = "upload" | "processing" | "review";
+interface SectionItem {
+  id: string;
+  label: string;
+  text: string;
+  included: boolean;
+}
+
+type Step = "upload" | "processing" | "select" | "review";
 
 export default function NewDeckPage() {
   const router = useRouter();
@@ -25,6 +32,7 @@ export default function NewDeckPage() {
   const [progressMessage, setProgressMessage] = useState("");
   const [error, setError] = useState("");
   const [deckTitle, setDeckTitle] = useState("");
+  const [sections, setSections] = useState<SectionItem[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [saving, setSaving] = useState(false);
   const [guessingId, setGuessingId] = useState<string | null>(null);
@@ -36,11 +44,11 @@ export default function NewDeckPage() {
 
     try {
       const { extractTextFromFile } = await import("@/lib/parsing");
-      const allSections: string[] = [];
+      const items: SectionItem[] = [];
 
       for (const file of files) {
         setProgressMessage(`Reading ${file.name}…`);
-        const { sections } = await extractTextFromFile(file, {
+        const { sections: fileSections } = await extractTextFromFile(file, {
           chineseVariant: variant,
           onProgress: ({ page, totalPages, ocr }) => {
             setProgressMessage(
@@ -48,11 +56,34 @@ export default function NewDeckPage() {
             );
           },
         });
-        allSections.push(...sections);
+        fileSections.forEach((text, i) => {
+          const label = files.length > 1 ? `${file.name} — page ${i + 1}` : `Page ${i + 1}`;
+          items.push({ id: `${file.name}-${i}`, label, text, included: true });
+        });
       }
 
-      setProgressMessage("Looking up words in the dictionary…");
-      const text = allSections.join("\n");
+      setSections(items);
+      if (!deckTitle) setDeckTitle(files[0]?.name.replace(/\.[^.]+$/, "") ?? "New deck");
+      setStep("select");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong while processing the file.");
+      setStep("upload");
+    }
+  }
+
+  function setAllSections(included: boolean) {
+    setSections((prev) => prev.map((s) => ({ ...s, included })));
+  }
+
+  async function handleContinueFromSections() {
+    const included = sections.filter((s) => s.included);
+    if (included.length === 0) return;
+    setError("");
+    setStep("processing");
+    setProgressMessage("Looking up words in the dictionary…");
+
+    try {
+      const text = included.map((s) => s.text).join("\n");
       const res = await fetch("/api/segment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,11 +104,10 @@ export default function NewDeckPage() {
           included: w.found,
         })),
       );
-      if (!deckTitle) setDeckTitle(files[0]?.name.replace(/\.[^.]+$/, "") ?? "New deck");
       setStep("review");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong while processing the file.");
-      setStep("upload");
+      setStep("select");
     }
   }
 
@@ -123,6 +153,73 @@ export default function NewDeckPage() {
       setError(e instanceof Error ? e.message : "Could not save the deck.");
       setSaving(false);
     }
+  }
+
+  if (step === "select") {
+    const includedCount = sections.filter((s) => s.included).length;
+    return (
+      <div className="mx-auto w-full max-w-3xl px-6 py-10">
+        <h1 className="mb-4 text-2xl font-semibold">Choose which pages to include</h1>
+        <p className="mb-6 text-sm text-zinc-500">
+          Uncheck title pages, intros, or anything else you don&apos;t want turned into
+          flashcards — this keeps them out before we even generate candidate words.
+        </p>
+
+        <div className="mb-4 flex gap-4 text-sm">
+          <button onClick={() => setAllSections(true)} className="text-zinc-500 hover:underline">
+            Select all
+          </button>
+          <button onClick={() => setAllSections(false)} className="text-zinc-500 hover:underline">
+            Deselect all
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {sections.map((s) => (
+            <label
+              key={s.id}
+              className={`flex items-start gap-3 rounded-md border p-3 text-sm ${
+                s.included
+                  ? "border-black/10 dark:border-white/10"
+                  : "border-black/5 opacity-50 dark:border-white/5"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={s.included}
+                onChange={(e) =>
+                  setSections((prev) =>
+                    prev.map((x) => (x.id === s.id ? { ...x, included: e.target.checked } : x)),
+                  )
+                }
+                className="mt-1"
+              />
+              <div>
+                <p className="mb-1 text-xs font-medium text-zinc-500">{s.label}</p>
+                <p className="whitespace-pre-wrap">
+                  {s.text.trim() || <span className="italic text-zinc-400">(no text found)</span>}
+                </p>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            onClick={handleContinueFromSections}
+            disabled={includedCount === 0}
+            className="rounded-md bg-foreground px-4 py-2 text-sm text-background disabled:opacity-60"
+          >
+            Continue with {includedCount} page{includedCount === 1 ? "" : "s"}
+          </button>
+          <button onClick={() => setStep("upload")} className="text-sm text-zinc-500 hover:underline">
+            Start over
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (step === "review") {
