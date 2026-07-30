@@ -56,14 +56,22 @@ export function extractPinyinSentencePairs(text: string): SentencePair[] {
 
   while (i < lines.length) {
     const line = lines[i];
+    const prev = i > 0 ? lines[i - 1] : undefined;
     const next = lines[i + 1];
     // Strip "Q:"/"A:" labels before checking the pinyin ratio — otherwise the
     // single leftover letter ("Q", "A") counts against the line's word ratio.
     const source = stripLabel(line);
     const translation = next ? stripLabel(next) : undefined;
+    // If the line right above this one already has Hanzi, this pinyin line is
+    // almost certainly just that Hanzi's own romanization gloss (a vocab list
+    // laid out as character line, then pinyin line, then a blank/label line)
+    // rather than a standalone hanzi-less sentence — don't pair it with
+    // whatever text happens to follow, which is often the *next* item's label.
+    const precededByHanzi = prev !== undefined && HAN_CHAR.test(prev);
 
     if (
       !looksLikeHeading(line) &&
+      !precededByHanzi &&
       looksLikePinyin(source) &&
       translation &&
       !looksLikePinyin(translation) &&
