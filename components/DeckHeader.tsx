@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { deleteDeck, renameDeck } from "@/lib/actions/decks";
+import { TrashIcon } from "./icons";
 
 export default function DeckHeader({ deckId, title }: { deckId: string; title: string }) {
   const [editing, setEditing] = useState(false);
@@ -46,8 +47,9 @@ export default function DeckHeader({ deckId, title }: { deckId: string; title: s
             startTransition(() => deleteDeck(deckId));
           }
         }}
-        className="text-sm text-red-600 hover:underline"
+        className="inline-flex items-center gap-1.5 rounded-full border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-950/40"
       >
+        <TrashIcon />
         Delete deck
       </button>
     </div>

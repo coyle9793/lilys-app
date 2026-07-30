@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { addCard, deleteCard, updateCard } from "@/lib/actions/decks";
 import type { Card } from "@/lib/types";
+import { PencilIcon, TrashIcon } from "./icons";
 
 function CardForm({
   initial,
@@ -91,14 +92,19 @@ export default function CardList({ deckId, cards }: { deckId: string; cards: Car
             <span className="text-lg">{card.hanzi}</span>
             <span className="text-zinc-500">{card.pinyin}</span>
             <span className="text-sm">{card.definition}</span>
-            <div className="flex gap-3 text-xs">
-              <button onClick={() => setEditingId(card.id)} className="hover:underline">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingId(card.id)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/15 px-3 py-1 text-xs font-medium hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/10"
+              >
+                <PencilIcon />
                 Edit
               </button>
               <button
                 onClick={() => startTransition(() => deleteCard(deckId, card.id))}
-                className="text-red-600 hover:underline"
+                className="inline-flex items-center gap-1.5 rounded-full border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-950/40"
               >
+                <TrashIcon />
                 Delete
               </button>
             </div>

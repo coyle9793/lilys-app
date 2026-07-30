@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/lib/actions/auth";
+import ThemeSettings from "./ThemeSettings";
+import { HomeIcon } from "./icons";
 
 export default async function NavBar() {
   const supabase = await createClient();
@@ -16,9 +18,19 @@ export default async function NavBar() {
       <nav className="flex items-center gap-4 text-sm">
         {user ? (
           <>
-            <Link href="/dashboard" className="hover:underline">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
+              style={{
+                background: "var(--accent-btn-bg)",
+                color: "var(--accent-btn-text)",
+                borderColor: "var(--accent-btn-border)",
+              }}
+            >
+              <HomeIcon />
               Dashboard
             </Link>
+            <ThemeSettings />
             <span className="text-zinc-500">{user.email}</span>
             <form action={logout}>
               <button type="submit" className="hover:underline">
