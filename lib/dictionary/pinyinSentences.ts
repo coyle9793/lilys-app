@@ -2,14 +2,21 @@ import { isFullyPinyinSyllables } from "./reversePinyin";
 
 const TONE_MARK =
   /[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜĀÁǍÀĒÉĚÈĪÍǎÌŌÓǑÒŪÚǓÙǕǗǙǛ]/;
+const HAN_CHAR = /\p{Script=Han}/u;
 
 /**
  * A line "looks like pinyin" if it has tone-mark diacritics (a strong, fast
  * signal), or — since OCR of photographed pages very often loses those small
  * marks — if most of its words can be fully split into known Mandarin
- * syllables even without tone marks.
+ * syllables even without tone marks. This only applies to lines with NO
+ * Hanzi at all — a line like "高兴 gāoxìng" (Hanzi plus its own pinyin gloss)
+ * has tone marks too, but it's not a hanzi-less pinyin sentence; it should be
+ * handled by the Han-based dictionary segmenter instead, which can split the
+ * hanzi and pinyin apart correctly instead of treating the whole raw line as
+ * a single opaque "word".
  */
 function looksLikePinyin(line: string): boolean {
+  if (HAN_CHAR.test(line)) return false;
   if (TONE_MARK.test(line)) return true;
 
   const words = line.match(/[a-zA-Zü]+/g) ?? [];
