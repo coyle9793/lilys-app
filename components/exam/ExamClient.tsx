@@ -147,6 +147,16 @@ export default function ExamClient({
     advance(results, updatedCharCounts);
   }
 
+  function retryIncorrect() {
+    if (!exam) return;
+    const wrongQuestions = exam.questions.filter((_, i) => !results[i]);
+    if (wrongQuestions.length === 0) return;
+    setExam({ ...exam, questions: wrongQuestions });
+    setIndex(0);
+    setResults([]);
+    setStep("taking");
+  }
+
   if (step === "setup") {
     return (
       <div className="flex flex-col gap-4">
@@ -239,6 +249,7 @@ export default function ExamClient({
 
   if (step === "results") {
     const score = results.filter(Boolean).length;
+    const wrongCount = results.length - score;
     const avgMark = writingScores.length
       ? Math.round(writingScores.reduce((a, b) => a + b, 0) / writingScores.length)
       : 0;
@@ -255,10 +266,22 @@ export default function ExamClient({
           </p>
         )}
         {exam && <p className="text-sm text-zinc-500">Estimated level: {exam.level}</p>}
-        <div className="flex gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
+          {mode !== "reading" && wrongCount > 0 && (
+            <button
+              onClick={retryIncorrect}
+              className="rounded-md bg-foreground px-4 py-2 text-sm text-background"
+            >
+              Retry {wrongCount} incorrect
+            </button>
+          )}
           <button
             onClick={() => setStep("setup")}
-            className="rounded-md bg-foreground px-4 py-2 text-sm text-background"
+            className={
+              mode !== "reading" && wrongCount > 0
+                ? "rounded-md border border-black/15 px-4 py-2 text-sm dark:border-white/15"
+                : "rounded-md bg-foreground px-4 py-2 text-sm text-background"
+            }
           >
             Generate another
           </button>
