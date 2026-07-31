@@ -37,16 +37,29 @@ create table if not exists card_progress (
   unique (card_id, user_id)
 );
 
+create table if not exists notes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  deck_id uuid references decks (id) on delete set null,
+  title text not null,
+  content text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists cards_deck_id_idx on cards (deck_id);
 create index if not exists decks_user_id_idx on decks (user_id);
 create index if not exists decks_folder_id_idx on decks (folder_id);
 create index if not exists folders_user_id_idx on folders (user_id);
 create index if not exists card_progress_user_due_idx on card_progress (user_id, due_at);
+create index if not exists notes_user_id_idx on notes (user_id);
+create index if not exists notes_deck_id_idx on notes (deck_id);
 
 alter table folders enable row level security;
 alter table decks enable row level security;
 alter table cards enable row level security;
 alter table card_progress enable row level security;
+alter table notes enable row level security;
 
 create policy "folders are owned by their creator" on folders
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -62,4 +75,7 @@ create policy "cards are visible through owned decks" on cards
   );
 
 create policy "card_progress is owned by its creator" on card_progress
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "notes are owned by their creator" on notes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

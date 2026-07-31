@@ -37,6 +37,9 @@ export default function NewDeckPage() {
   const [saving, setSaving] = useState(false);
   const [guessingId, setGuessingId] = useState<string | null>(null);
   const [existingWordDecks, setExistingWordDecks] = useState<Record<string, string[]>>({});
+  const [notesEnabled, setNotesEnabled] = useState(true);
+  const [notes, setNotes] = useState("");
+  const [notesError, setNotesError] = useState("");
 
   async function handleExtract() {
     if (files.length === 0) return;
@@ -85,13 +88,20 @@ export default function NewDeckPage() {
 
     try {
       const text = included.map((s) => s.text).join("\n");
-      const [segRes, existingRes] = await Promise.all([
+      const [segRes, existingRes, notesRes] = await Promise.all([
         fetch("/api/segment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text }),
         }),
         fetch("/api/existing-words"),
+        notesEnabled
+          ? fetch("/api/generate-notes", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text, title: deckTitle }),
+            })
+          : null,
       ]);
       if (!segRes.ok) throw new Error("Dictionary lookup failed.");
       const { words } = (await segRes.json()) as {
@@ -106,6 +116,20 @@ export default function NewDeckPage() {
         setExistingWordDecks(existing);
       } else {
         setExistingWordDecks({});
+      }
+
+      // Notes generation is also non-essential to saving the deck — if it
+      // fails (or Gemini isn't configured), show why but don't block review.
+      if (notesRes) {
+        if (notesRes.ok) {
+          const { notes: generated } = (await notesRes.json()) as { notes: string };
+          setNotes(generated);
+          setNotesError("");
+        } else {
+          const { error: notesErr } = (await notesRes.json().catch(() => ({}))) as { error?: string };
+          setNotes("");
+          setNotesError(notesErr || "Couldn't generate notes.");
+        }
       }
 
       setCandidates(
@@ -168,6 +192,7 @@ export default function NewDeckPage() {
       await createDeck(
         deckTitle.trim(),
         selected.map((c) => ({ hanzi: c.hanzi.trim(), pinyin: c.pinyin.trim(), definition: c.definition.trim() })),
+        notesEnabled ? notes : undefined,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save the deck.");
@@ -356,6 +381,27 @@ export default function NewDeckPage() {
           dictionary lookup and are frequently wrong. Always check before trusting.
         </p>
 
+        {notesEnabled && (
+          <div className="mt-6">
+            <h2 className="mb-1 text-sm font-medium">Notes</h2>
+            {notesError ? (
+              <p className="text-sm text-zinc-500">{notesError}</p>
+            ) : (
+              <>
+                <p className="mb-2 text-xs text-zinc-400">
+                  Generated from these slides — edit before saving if you&apos;d like.
+                </p>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={8}
+                  className="w-full rounded-md border border-black/15 px-3 py-2 text-sm dark:border-white/15"
+                />
+              </>
+            )}
+          </div>
+        )}
+
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
         <div className="mt-6 flex items-center gap-3">
@@ -403,6 +449,32 @@ export default function NewDeckPage() {
           </ul>
         )}
 
+        <div className="rounded-md border border-black/15 p-3 text-sm dark:border-white/15">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            What should we generate?
+          </p>
+          <div className="flex items-center justify-between border-b border-black/10 py-2 dark:border-white/10">
+            <div>
+              <p className="font-medium">Flashcards</p>
+              <p className="text-xs text-zinc-500">Hanzi + pinyin + definition, ready to study</p>
+            </div>
+            <input type="checkbox" checked disabled className="h-4 w-4" aria-label="Flashcards (always included)" />
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <div>
+              <p className="font-medium">Notes</p>
+              <p className="text-xs text-zinc-500">A written summary of the slide content, for reading back over</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={notesEnabled}
+              onChange={(e) => setNotesEnabled(e.target.checked)}
+              className="h-4 w-4"
+              aria-label="Also generate notes"
+            />
+          </div>
+        </div>
+
         <fieldset className="flex flex-col gap-1 text-sm">
           <legend className="mb-1">Character set (for photo/scanned OCR)</legend>
           <label className="flex items-center gap-2">
@@ -433,7 +505,7 @@ export default function NewDeckPage() {
             disabled={files.length === 0}
             className="self-start rounded-md bg-foreground px-4 py-2 text-sm text-background disabled:opacity-60"
           >
-            Extract flashcards
+            {notesEnabled ? "Extract flashcards + notes" : "Extract flashcards"}
           </button>
         )}
 

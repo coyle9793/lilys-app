@@ -14,7 +14,7 @@ async function requireUser() {
   return { supabase, user };
 }
 
-export async function createDeck(title: string, cards: NewCardInput[]) {
+export async function createDeck(title: string, cards: NewCardInput[], notesContent?: string) {
   const { supabase, user } = await requireUser();
 
   const { data: deck, error: deckError } = await supabase
@@ -38,8 +38,16 @@ export async function createDeck(title: string, cards: NewCardInput[]) {
     if (cardsError) throw new Error(cardsError.message);
   }
 
+  if (notesContent?.trim()) {
+    const { error: notesError } = await supabase
+      .from("notes")
+      .insert({ user_id: user.id, deck_id: deck.id, title, content: notesContent.trim() });
+    if (notesError) throw new Error(notesError.message);
+  }
+
   revalidatePath("/dashboard");
   revalidatePath("/decks");
+  revalidatePath("/notes");
   redirect(`/decks/${deck.id}`);
 }
 
