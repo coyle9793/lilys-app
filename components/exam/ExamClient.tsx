@@ -38,6 +38,15 @@ const COINS_PER_CORRECT: Record<"questions" | "multiple_choice", number> = {
 };
 const CHARS_PER_COIN = 5;
 
+const TYPE_LABEL: Record<ExamQuestion["type"], string> = {
+  multiple_choice: "Multiple choice",
+  translate_to_english: "Translate to English",
+  translate_to_chinese: "Translate to Chinese",
+  fill_in_blank: "Fill in the blank",
+  short_answer: "Short answer",
+  writing_task: "Reading & writing",
+};
+
 export default function ExamClient({
   deckIds,
   cardCount,
@@ -320,6 +329,9 @@ function QuestionCard({
     return (
       <div className="flex flex-col gap-4">
         <div className="rounded-xl border border-black/10 bg-white p-6 text-center dark:border-white/10 dark:bg-zinc-900">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            {TYPE_LABEL[question.type]}
+          </p>
           <p className="text-lg">{question.prompt}</p>
         </div>
         <div className="flex flex-col gap-2">
@@ -359,6 +371,9 @@ function QuestionCard({
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-xl border border-black/10 bg-white p-6 text-center dark:border-white/10 dark:bg-zinc-900">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+          {TYPE_LABEL[question.type]}
+        </p>
         <p className="text-lg">{question.prompt}</p>
       </div>
       <form

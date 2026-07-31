@@ -61,6 +61,11 @@ function extractJsonObject(text: string): string {
   return start !== -1 && end > start ? stripped.slice(start, end + 1) : stripped;
 }
 
+/** Strips an answer/translation the model sometimes leaks into the prompt despite being told not to. */
+function sanitizePrompt(prompt: string): string {
+  return prompt.replace(/\s*[([]\s*(?:answer|translation)\s*:[^)\]]*[)\]]\s*$/i, "").trim();
+}
+
 function isValidQuestion(q: unknown, allowedTypes: ExamQuestionType[]): q is ExamQuestion {
   if (typeof q !== "object" || q === null) return false;
   const question = q as Record<string, unknown>;
@@ -131,6 +136,12 @@ ${modeInstruction(mode, questionCount)}
 
 Generate exactly ${questionCount} questions appropriate for that level.
 
+The "prompt" field must contain ONLY the question or task itself — never include the
+answer, a translation, or any hint like "(Answer: ...)" inside it. The correct answer
+goes ONLY in the "answer" field. Every "prompt" must be a clear, complete instruction
+or sentence a student can act on by itself, for example: "Translate to English: 你好"
+or "Fill in the blank: 我___中国人。" — not just a bare word or phrase.
+
 ${
   mode === "reading"
     ? `For each writing_task: put the reading passage in "passage", the task instructions (including any length requirement, e.g. "Write a reply of about 150 characters") in "prompt", and a model/sample answer in "answer" so a grader has something to compare against.`
@@ -184,7 +195,14 @@ value (e.g. \\" ) so the JSON stays valid. Match exactly this shape:
       continue;
     }
 
-    const questions = questionsRaw.filter((q: unknown): q is ExamQuestion => isValidQuestion(q, allowedTypes));
+    const sanitized = questionsRaw.map((q) => {
+      if (q && typeof q === "object" && typeof (q as Record<string, unknown>).prompt === "string") {
+        const question = q as Record<string, unknown>;
+        return { ...question, prompt: sanitizePrompt(question.prompt as string) };
+      }
+      return q;
+    });
+    const questions = sanitized.filter((q: unknown): q is ExamQuestion => isValidQuestion(q, allowedTypes));
     if (questions.length === 0) {
       console.error(`Generated exam had no valid questions for mode ${mode} (attempt ${attempt}/${ATTEMPTS}):`, result.text);
       lastError = new Error("Gemini didn't return any usable questions for this mode — try generating again.");
