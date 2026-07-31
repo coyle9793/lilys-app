@@ -30,10 +30,11 @@ export default async function DashboardPage() {
           </Link>
           <Link
             href="/decks/new"
-            className="rounded-md px-4 py-2 text-sm font-medium"
+            className="rounded-md border px-4 py-2 text-sm"
             style={{
-              background: "var(--accent-btn-solid-bg)",
-              color: "var(--accent-btn-solid-text)",
+              background: "var(--accent-btn-bg)",
+              color: "var(--accent-btn-text)",
+              borderColor: "var(--accent-btn-border)",
             }}
           >
             + Import slides
