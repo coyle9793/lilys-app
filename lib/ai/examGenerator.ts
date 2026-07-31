@@ -159,8 +159,8 @@ value (e.g. \\" ) so the JSON stays valid. Match exactly this shape:
 
   for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
     const result = await callGemini(prompt, {
-      maxOutputTokens: mode === "reading" ? 8000 : 6000,
-      timeoutMs: mode === "reading" ? 90_000 : 75_000,
+      maxOutputTokens: 16_000,
+      timeoutMs: 100_000,
     });
     if (!result.ok) {
       lastError = new Error(result.error);
