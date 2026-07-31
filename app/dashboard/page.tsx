@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getDecksWithCounts } from "@/lib/queries";
+import { getDecksWithCounts, getFolders } from "@/lib/queries";
+import DeckFolders from "@/components/DeckFolders";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -11,6 +12,9 @@ export default async function DashboardPage() {
   if (!user) redirect("/login");
 
   const decks = await getDecksWithCounts(supabase, user.id);
+  // Falls back to no folders (rather than a broken dashboard) for accounts
+  // that haven't run the folders migration (supabase/migrations/0001_add_folders.sql) yet.
+  const folders = await getFolders(supabase, user.id).catch(() => []);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-6 py-10">
@@ -49,37 +53,7 @@ export default async function DashboardPage() {
           </p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {decks.map(({ deck, cardCount, dueCount }) => (
-            <li
-              key={deck.id}
-              className="relative flex items-center justify-between rounded-lg border border-black/10 bg-card p-4 transition-colors hover:border-black/20 dark:border-white/10 dark:hover:border-white/20"
-            >
-              <Link
-                href={`/decks/${deck.id}`}
-                className="absolute inset-0 rounded-lg"
-                aria-label={`Open ${deck.title}`}
-              />
-              <div>
-                <span className="font-medium">{deck.title}</span>
-                <p className="text-sm text-zinc-500">{cardCount} cards</p>
-              </div>
-              <div className="flex items-center gap-3">
-                {dueCount > 0 && (
-                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                    {dueCount} due
-                  </span>
-                )}
-                <Link
-                  href={`/decks/${deck.id}/study`}
-                  className="relative z-10 rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/15"
-                >
-                  Study
-                </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <DeckFolders folders={folders} decks={decks} />
       )}
     </div>
   );

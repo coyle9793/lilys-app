@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Card, CardProgress, Deck } from "@/lib/types";
+import type { Card, CardProgress, Deck, Folder } from "@/lib/types";
 
 /** Cards due for review: never studied, or whose scheduled due date has passed. */
 export function filterDueCards(cards: Card[], progress: Map<string, CardProgress>): Card[] {
@@ -8,6 +8,16 @@ export function filterDueCards(cards: Card[], progress: Map<string, CardProgress
     const p = progress.get(c.id);
     return !p || new Date(p.due_at).getTime() <= now;
   });
+}
+
+export async function getFolders(supabase: SupabaseClient, userId: string) {
+  const { data, error } = await supabase
+    .from("folders")
+    .select("*")
+    .eq("user_id", userId)
+    .order("name", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data as Folder[];
 }
 
 export async function getDecksWithCounts(supabase: SupabaseClient, userId: string) {

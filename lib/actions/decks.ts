@@ -50,6 +50,13 @@ export async function renameDeck(deckId: string, title: string) {
   revalidatePath("/dashboard");
 }
 
+export async function moveDeckToFolder(deckId: string, folderId: string | null) {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("decks").update({ folder_id: folderId }).eq("id", deckId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}
+
 export async function deleteDeck(deckId: string) {
   const { supabase } = await requireUser();
   const { error } = await supabase.from("decks").delete().eq("id", deckId);

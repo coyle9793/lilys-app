@@ -1,6 +1,14 @@
+export interface Folder {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Deck {
   id: string;
   user_id: string;
+  folder_id: string | null;
   title: string;
   created_at: string;
 }

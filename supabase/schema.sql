@@ -1,9 +1,17 @@
 -- Chinese flashcard app schema.
 -- Run this in the Supabase SQL editor for your project (Project > SQL Editor > New query).
 
+create table if not exists folders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists decks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
+  folder_id uuid references folders (id) on delete set null,
   title text not null,
   created_at timestamptz not null default now()
 );
@@ -31,11 +39,17 @@ create table if not exists card_progress (
 
 create index if not exists cards_deck_id_idx on cards (deck_id);
 create index if not exists decks_user_id_idx on decks (user_id);
+create index if not exists decks_folder_id_idx on decks (folder_id);
+create index if not exists folders_user_id_idx on folders (user_id);
 create index if not exists card_progress_user_due_idx on card_progress (user_id, due_at);
 
+alter table folders enable row level security;
 alter table decks enable row level security;
 alter table cards enable row level security;
 alter table card_progress enable row level security;
+
+create policy "folders are owned by their creator" on folders
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "decks are owned by their creator" on decks
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

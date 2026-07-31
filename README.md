@@ -8,8 +8,12 @@ AI-generated leveled exams — free, with your decks synced to your account.
 
 1. **Create a free Supabase project** at [supabase.com](https://supabase.com).
 2. In your project's SQL Editor, run the contents of [`supabase/schema.sql`](./supabase/schema.sql)
-   to create the `decks`, `cards`, and `card_progress` tables (with row-level
-   security so each account only sees its own data).
+   to create the `folders`, `decks`, `cards`, and `card_progress` tables (with
+   row-level security so each account only sees its own data).
+   - Already set the app up before folders existed? Just run
+     [`supabase/migrations/0001_add_folders.sql`](./supabase/migrations/0001_add_folders.sql)
+     instead — it only adds the new folders table/column, so it's safe to run
+     on top of your existing data.
 3. In your Supabase project settings (Project Settings → API), copy the
    **Project URL** and **anon public key**.
 4. Copy `.env.example` to `.env.local` and fill in those two values:
