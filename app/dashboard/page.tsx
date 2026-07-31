@@ -19,13 +19,22 @@ export default async function DashboardPage() {
         <div className="flex gap-3">
           <Link
             href="/exam/new"
-            className="rounded-md border border-black/15 px-4 py-2 text-sm dark:border-white/15"
+            className="rounded-md border px-4 py-2 text-sm"
+            style={{
+              background: "var(--accent-btn-bg)",
+              color: "var(--accent-btn-text)",
+              borderColor: "var(--accent-btn-border)",
+            }}
           >
             Generate exam
           </Link>
           <Link
             href="/decks/new"
-            className="rounded-md bg-foreground px-4 py-2 text-sm text-background"
+            className="rounded-md px-4 py-2 text-sm font-medium"
+            style={{
+              background: "var(--accent-btn-solid-bg)",
+              color: "var(--accent-btn-solid-text)",
+            }}
           >
             + Import slides
           </Link>
