@@ -36,6 +36,7 @@ export default function NewDeckPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [saving, setSaving] = useState(false);
   const [guessingId, setGuessingId] = useState<string | null>(null);
+  const [existingWordDecks, setExistingWordDecks] = useState<Record<string, string[]>>({});
 
   async function handleExtract() {
     if (files.length === 0) return;
@@ -84,15 +85,28 @@ export default function NewDeckPage() {
 
     try {
       const text = included.map((s) => s.text).join("\n");
-      const res = await fetch("/api/segment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) throw new Error("Dictionary lookup failed.");
-      const { words } = (await res.json()) as {
+      const [segRes, existingRes] = await Promise.all([
+        fetch("/api/segment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        }),
+        fetch("/api/existing-words"),
+      ]);
+      if (!segRes.ok) throw new Error("Dictionary lookup failed.");
+      const { words } = (await segRes.json()) as {
         words: { hanzi: string; pinyin: string; definitions: string[]; found: boolean }[];
       };
+
+      // Flagging repeats across decks is a nice-to-have, not core to saving
+      // the deck — if it fails, just show no highlights instead of failing
+      // the whole import.
+      if (existingRes.ok) {
+        const { words: existing } = (await existingRes.json()) as { words: Record<string, string[]> };
+        setExistingWordDecks(existing);
+      } else {
+        setExistingWordDecks({});
+      }
 
       setCandidates(
         words.map((w, i) => ({
@@ -138,6 +152,12 @@ export default function NewDeckPage() {
       { id: `manual-${Date.now()}`, hanzi: "", pinyin: "", definition: "", found: true, included: true },
       ...prev,
     ]);
+  }
+
+  function removeRepeatedWords() {
+    setCandidates((prev) =>
+      prev.map((c) => ((existingWordDecks[c.hanzi]?.length ?? 0) > 0 ? { ...c, included: false } : c)),
+    );
   }
 
   async function handleSave() {
@@ -224,12 +244,17 @@ export default function NewDeckPage() {
 
   if (step === "review") {
     const includedCount = candidates.filter((c) => c.included).length;
+    const repeatedCount = candidates.filter(
+      (c) => c.included && (existingWordDecks[c.hanzi]?.length ?? 0) > 0,
+    ).length;
     return (
       <div className="mx-auto w-full max-w-3xl px-6 py-10">
         <h1 className="mb-4 text-2xl font-semibold">Review your flashcards</h1>
         <p className="mb-6 text-sm text-zinc-500">
           We found {candidates.length} candidate flashcards. Uncheck anything that
           doesn&apos;t belong, fix any OCR mistakes, and add missing ones before saving.
+          {repeatedCount > 0 &&
+            " Words that already appear in one of your other decks are highlighted in purple."}
         </p>
 
         <label className="mb-4 flex flex-col gap-1 text-sm">
@@ -241,21 +266,36 @@ export default function NewDeckPage() {
           />
         </label>
 
-        <button
-          onClick={addBlankCandidate}
-          className="mb-3 rounded-md border border-dashed border-black/20 px-3 py-1.5 text-sm text-zinc-500 dark:border-white/20"
-        >
-          + Add a card manually
-        </button>
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <button
+            onClick={addBlankCandidate}
+            className="rounded-md border border-dashed border-black/20 px-3 py-1.5 text-sm text-zinc-500 dark:border-white/20"
+          >
+            + Add a card manually
+          </button>
+          {repeatedCount > 0 && (
+            <button
+              onClick={removeRepeatedWords}
+              className="rounded-md border border-violet-300 bg-violet-50 px-3 py-1.5 text-sm text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-300"
+            >
+              Remove {repeatedCount} word{repeatedCount === 1 ? "" : "s"} already in other decks
+            </button>
+          )}
+        </div>
 
         <div className="flex flex-col gap-2">
           {candidates.map((c) => {
             const isPinyinOnly = c.pinyin.length > 0 && c.hanzi === c.pinyin;
+            const repeatDecks = existingWordDecks[c.hanzi] ?? [];
             return (
               <div
                 key={c.id}
                 className={`grid grid-cols-[auto_1fr_1fr_2fr_auto] items-center gap-2 rounded-md border p-2 ${
-                  c.found ? "border-black/10 bg-card dark:border-white/10" : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
+                  !c.found
+                    ? "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
+                    : repeatDecks.length > 0
+                      ? "border-violet-300 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30"
+                      : "border-black/10 bg-card dark:border-white/10"
                 }`}
               >
                 <input
@@ -274,6 +314,12 @@ export default function NewDeckPage() {
                   )}
                   {c.guessSource === "dictionary" && (
                     <span className="text-[10px] text-amber-600">rough guess — likely wrong</span>
+                  )}
+                  {repeatDecks.length > 0 && (
+                    <span className="text-[10px] text-violet-600 dark:text-violet-400">
+                      Also in: {repeatDecks.slice(0, 2).join(", ")}
+                      {repeatDecks.length > 2 ? ` +${repeatDecks.length - 2} more` : ""}
+                    </span>
                   )}
                 </div>
                 <input

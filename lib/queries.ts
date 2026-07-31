@@ -96,6 +96,41 @@ export async function getDecksWithCardsByIds(
   return { decks: decks as Deck[], cards: (cards ?? []) as Card[] };
 }
 
+/**
+ * Maps each Hanzi word already saved in one of the user's decks to the
+ * titles of the decks that contain it — used to flag repeats (e.g. 你/吗/我)
+ * that keep reappearing across different slide sets when importing a new one.
+ */
+export async function getExistingWordDecks(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Map<string, string[]>> {
+  const { data: decks, error: decksError } = await supabase
+    .from("decks")
+    .select("id, title")
+    .eq("user_id", userId);
+  if (decksError) throw new Error(decksError.message);
+  if (!decks || decks.length === 0) return new Map();
+
+  const deckTitleById = new Map((decks as { id: string; title: string }[]).map((d) => [d.id, d.title]));
+
+  const { data: cards, error: cardsError } = await supabase
+    .from("cards")
+    .select("hanzi, deck_id")
+    .in("deck_id", decks.map((d) => d.id));
+  if (cardsError) throw new Error(cardsError.message);
+
+  const result = new Map<string, string[]>();
+  for (const card of (cards ?? []) as { hanzi: string; deck_id: string }[]) {
+    const title = deckTitleById.get(card.deck_id);
+    if (!title) continue;
+    const titles = result.get(card.hanzi) ?? [];
+    if (!titles.includes(title)) titles.push(title);
+    result.set(card.hanzi, titles);
+  }
+  return result;
+}
+
 export async function getProgressForCards(
   supabase: SupabaseClient,
   userId: string,
