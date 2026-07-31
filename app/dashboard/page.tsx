@@ -4,7 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getDecksWithCounts, getFolders } from "@/lib/queries";
 import DeckFolders from "@/components/DeckFolders";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ folder?: string }>;
+}) {
+  const { folder } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -53,7 +58,7 @@ export default async function DashboardPage() {
           </p>
         </div>
       ) : (
-        <DeckFolders folders={folders} decks={decks} />
+        <DeckFolders folders={folders} decks={decks} initialFolderId={folder} />
       )}
     </div>
   );

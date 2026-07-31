@@ -15,7 +15,7 @@ export async function getFolders(supabase: SupabaseClient, userId: string) {
     .from("folders")
     .select("*")
     .eq("user_id", userId)
-    .order("name", { ascending: true });
+    .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return data as Folder[];
 }

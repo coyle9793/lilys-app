@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createFolder, renameFolder, deleteFolder } from "@/lib/actions/folders";
+import { createFolder } from "@/lib/actions/folders";
 import { moveDeckToFolder } from "@/lib/actions/decks";
+import { FolderRow } from "@/components/FolderRow";
 import type { Deck, Folder } from "@/lib/types";
 
 interface DeckRow {
@@ -15,14 +16,27 @@ interface DeckRow {
 const ALL = "all";
 const UNFILED = "unfiled";
 const FOLDER_PREFIX = "folder:";
+const SIDEBAR_FOLDER_LIMIT = 5;
 
-export default function DeckFolders({ folders, decks }: { folders: Folder[]; decks: DeckRow[] }) {
-  const [view, setView] = useState<string>(ALL);
+export default function DeckFolders({
+  folders,
+  decks,
+  initialFolderId,
+}: {
+  folders: Folder[];
+  decks: DeckRow[];
+  initialFolderId?: string;
+}) {
+  const [rawView, setView] = useState<string>(initialFolderId ? FOLDER_PREFIX + initialFolderId : ALL);
   const [addingFolder, setAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [creating, setCreating] = useState(false);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState("");
+
+  // If the currently selected folder gets deleted (from here or the "all
+  // folders" page), fall back to "All decks" instead of showing an empty
+  // "Folder" view with no way back to it in the sidebar.
+  const view =
+    rawView.startsWith(FOLDER_PREFIX) && !folders.some((f) => FOLDER_PREFIX + f.id === rawView) ? ALL : rawView;
 
   const byFolder = new Map<string, DeckRow[]>();
   const unfiled: DeckRow[] = [];
@@ -49,23 +63,6 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
     }
   }
 
-  async function handleRename(folderId: string) {
-    const name = renameValue.trim();
-    setRenamingId(null);
-    if (!name) return;
-    await renameFolder(folderId, name);
-  }
-
-  async function handleDelete(folderId: string, folderName: string) {
-    if (
-      !confirm(`Delete "${folderName}"? Decks inside it move back to "No folder" — they won't be deleted.`)
-    ) {
-      return;
-    }
-    await deleteFolder(folderId);
-    if (view === FOLDER_PREFIX + folderId) setView(ALL);
-  }
-
   let visibleRows: DeckRow[];
   let heading: string;
   if (view === ALL) {
@@ -79,6 +76,9 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
     visibleRows = byFolder.get(folderId) ?? [];
     heading = folders.find((f) => f.id === folderId)?.name ?? "Folder";
   }
+
+  const sidebarFolders = folders.slice(0, SIDEBAR_FOLDER_LIMIT);
+  const hasMoreFolders = folders.length > SIDEBAR_FOLDER_LIMIT;
 
   return (
     <div className="flex gap-8">
@@ -97,46 +97,24 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
 
         <div className="mb-1 mt-3 text-xs font-medium uppercase tracking-wide text-zinc-400">Folders</div>
 
-        {folders.map((folder) => {
+        {sidebarFolders.map((folder) => {
           const key = FOLDER_PREFIX + folder.id;
-          const isActive = view === key;
-          const isRenaming = renamingId === folder.id;
-          if (isRenaming) {
-            return (
-              <input
-                key={folder.id}
-                autoFocus
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleRename(folder.id)}
-                onBlur={() => handleRename(folder.id)}
-                className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
-              />
-            );
-          }
           return (
-            <SidebarRow key={folder.id} active={isActive}>
-              <SidebarLabel label={folder.name} count={byFolder.get(folder.id)?.length ?? 0} active={isActive} onClick={() => setView(key)} />
-              <button
-                onClick={() => {
-                  setRenamingId(folder.id);
-                  setRenameValue(folder.name);
-                }}
-                aria-label={`Rename ${folder.name}`}
-                className="shrink-0 px-1 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-              >
-                ✎
-              </button>
-              <button
-                onClick={() => handleDelete(folder.id, folder.name)}
-                aria-label={`Delete ${folder.name}`}
-                className="shrink-0 px-1 text-xs text-zinc-400 hover:text-red-500"
-              >
-                ×
-              </button>
-            </SidebarRow>
+            <FolderRow
+              key={folder.id}
+              folder={folder}
+              count={byFolder.get(folder.id)?.length ?? 0}
+              active={view === key}
+              onClick={() => setView(key)}
+            />
           );
         })}
+
+        {hasMoreFolders && (
+          <Link href="/folders" className="px-1 py-0.5 text-xs text-zinc-500 hover:underline dark:text-zinc-400">
+            More folders ({folders.length - SIDEBAR_FOLDER_LIMIT} more) →
+          </Link>
+        )}
 
         {addingFolder ? (
           <div className="mt-2 flex flex-col gap-1.5">
@@ -195,7 +173,7 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
   );
 }
 
-/** The bordered box that gives each sidebar entry its own visible separation. */
+/** The bordered box that gives "All decks" / "No folder" their own visible separation. */
 function SidebarRow({
   active,
   children,
