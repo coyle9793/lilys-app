@@ -34,6 +34,7 @@ create table if not exists card_progress (
   interval_days real not null default 0,
   due_at timestamptz not null default now(),
   last_reviewed_at timestamptz,
+  last_grade text,
   unique (card_id, user_id)
 );
 

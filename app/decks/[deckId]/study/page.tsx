@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { filterDueCards, getDeckWithCards, getProgressForCards } from "@/lib/queries";
+import { filterDueCards, getDeckWithCards, getProgressForCards, groupCardsByLastGrade } from "@/lib/queries";
 import StudySession from "@/components/study/StudySession";
 
 export default async function StudyPage({
@@ -26,6 +26,7 @@ export default async function StudyPage({
   );
 
   const dueCards = filterDueCards(cards, progress);
+  const gradeGroups = groupCardsByLastGrade(cards, progress);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-6 py-10">
@@ -33,7 +34,7 @@ export default async function StudyPage({
       {cards.length === 0 ? (
         <p className="text-zinc-500">This deck has no cards yet.</p>
       ) : (
-        <StudySession deckId={deck.id} allCards={cards} dueCards={dueCards} />
+        <StudySession deckId={deck.id} allCards={cards} dueCards={dueCards} gradeGroups={gradeGroups} />
       )}
     </div>
   );

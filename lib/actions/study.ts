@@ -32,6 +32,7 @@ export async function recordReview(deckId: string, cardId: string, grade: Grade)
       interval_days: next.intervalDays,
       due_at: next.dueAt.toISOString(),
       last_reviewed_at: new Date().toISOString(),
+      last_grade: grade,
     },
     { onConflict: "card_id,user_id" },
   );

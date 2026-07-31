@@ -30,6 +30,16 @@ export function FolderIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+export function DotsIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor" {...props}>
+      <circle cx="4" cy="10" r="1.6" />
+      <circle cx="10" cy="10" r="1.6" />
+      <circle cx="16" cy="10" r="1.6" />
+    </svg>
+  );
+}
+
 export function GearIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>

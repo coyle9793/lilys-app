@@ -31,6 +31,7 @@ export interface CardProgress {
   interval_days: number;
   due_at: string;
   last_reviewed_at: string | null;
+  last_grade: "again" | "hard" | "good" | "easy" | null;
 }
 
 export interface Note {

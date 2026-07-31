@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Card, CardProgress, Deck, Folder, Note } from "@/lib/types";
+import type { Grade } from "@/lib/srs/sm2";
 
 /** Cards due for review: never studied, or whose scheduled due date has passed. */
 export function filterDueCards(cards: Card[], progress: Map<string, CardProgress>): Card[] {
@@ -8,6 +9,19 @@ export function filterDueCards(cards: Card[], progress: Map<string, CardProgress
     const p = progress.get(c.id);
     return !p || new Date(p.due_at).getTime() <= now;
   });
+}
+
+/** Groups cards by how they were last graded (Again/Hard/Good/Easy) — never-graded cards are left out. */
+export function groupCardsByLastGrade(
+  cards: Card[],
+  progress: Map<string, CardProgress>,
+): Record<Grade, Card[]> {
+  const groups: Record<Grade, Card[]> = { again: [], hard: [], good: [], easy: [] };
+  for (const card of cards) {
+    const grade = progress.get(card.id)?.last_grade;
+    if (grade) groups[grade].push(card);
+  }
+  return groups;
 }
 
 export async function getFolders(supabase: SupabaseClient, userId: string) {
