@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { renameFolder, deleteFolder } from "@/lib/actions/folders";
+import { FolderIcon } from "@/components/icons";
 import type { Folder } from "@/lib/types";
 
 /**
@@ -74,13 +75,23 @@ export function FolderRow({
     >
       {href ? (
         <Link href={href} className={labelClass} style={labelStyle}>
-          <span className="truncate">{folder.name}</span>
-          <span className="ml-2 shrink-0 text-xs text-zinc-400">{count}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <FolderIcon className="shrink-0 text-zinc-400" />
+            <span className="truncate">{folder.name}</span>
+          </span>
+          <span className="ml-2 shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-xs text-zinc-500 dark:bg-white/10 dark:text-zinc-400">
+            {count}
+          </span>
         </Link>
       ) : (
         <button onClick={onClick} className={labelClass} style={labelStyle}>
-          <span className="truncate">{folder.name}</span>
-          <span className="ml-2 shrink-0 text-xs text-zinc-400">{count}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <FolderIcon className="shrink-0 text-zinc-400" />
+            <span className="truncate">{folder.name}</span>
+          </span>
+          <span className="ml-2 shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-xs text-zinc-500 dark:bg-white/10 dark:text-zinc-400">
+            {count}
+          </span>
         </button>
       )}
       <button

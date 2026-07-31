@@ -22,6 +22,14 @@ export function HomeIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+export function FolderIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
+      <path d="M3 6.5a1 1 0 0 1 1-1h3.3l1.4 1.8H16a1 1 0 0 1 1 1v6.2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" />
+    </svg>
+  );
+}
+
 export function GearIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
