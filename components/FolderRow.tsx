@@ -7,9 +7,9 @@ import { FolderIcon } from "@/components/icons";
 import type { Folder } from "@/lib/types";
 
 /**
- * A single boxed folder entry with its own rename/delete controls — used both
- * in the dashboard sidebar (click switches the view in place) and on the
- * "all folders" page (click navigates to the dashboard filtered to it).
+ * A single folder entry with its own rename/delete controls — used both in
+ * the dashboard sidebar (compact, click switches the view in place) and on
+ * the "all folders" page (spacious, click navigates to it).
  */
 export function FolderRow({
   folder,
@@ -17,12 +17,14 @@ export function FolderRow({
   active = false,
   href,
   onClick,
+  variant = "compact",
 }: {
   folder: Folder;
   count: number;
   active?: boolean;
   href?: string;
   onClick?: () => void;
+  variant?: "compact" | "spacious";
 }) {
   const [renaming, setRenaming] = useState(false);
   const [value, setValue] = useState(folder.name);
@@ -61,50 +63,67 @@ export function FolderRow({
     );
   }
 
-  const labelClass = `flex min-w-0 flex-1 items-center justify-between px-1 py-1.5 text-left text-sm ${
-    active ? "font-medium" : "text-zinc-600 dark:text-zinc-400"
-  }`;
+  const spacious = variant === "spacious";
+
+  const labelClass = `flex min-w-0 flex-1 items-center gap-3 text-left ${
+    spacious ? "px-4 py-3.5" : "px-1 py-1.5 text-sm"
+  } ${active ? "font-medium" : "text-zinc-600 dark:text-zinc-400"}`;
   const labelStyle = active ? { color: "var(--accent-btn-text)" } : undefined;
+
+  const iconEl = spacious ? (
+    <span
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+      style={{ background: "var(--accent-btn-bg)", color: "var(--accent-btn-text)" }}
+    >
+      <FolderIcon width={18} height={18} />
+    </span>
+  ) : (
+    <FolderIcon className="shrink-0 text-zinc-400" />
+  );
+
+  const countPill = (
+    <span
+      className={`ml-2 shrink-0 rounded-full bg-black/5 text-zinc-500 dark:bg-white/10 dark:text-zinc-400 ${
+        spacious ? "px-3 py-1 text-sm" : "px-2 py-0.5 text-xs"
+      }`}
+    >
+      {count} {spacious ? (count === 1 ? "deck" : "decks") : ""}
+    </span>
+  );
 
   return (
     <div
-      className={`flex items-center gap-0.5 rounded-md border px-1 ${
+      className={`flex items-center gap-0.5 rounded-md border ${spacious ? "rounded-xl px-3" : "px-1"} ${
         active ? "" : "border-black/10 dark:border-white/10"
       }`}
       style={active ? { background: "var(--accent-btn-bg)", borderColor: "var(--accent-btn-border)" } : undefined}
     >
       {href ? (
         <Link href={href} className={labelClass} style={labelStyle}>
-          <span className="flex min-w-0 items-center gap-1.5">
-            <FolderIcon className="shrink-0 text-zinc-400" />
-            <span className="truncate">{folder.name}</span>
-          </span>
-          <span className="ml-2 shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-xs text-zinc-500 dark:bg-white/10 dark:text-zinc-400">
-            {count}
-          </span>
+          {iconEl}
+          <span className={`min-w-0 flex-1 truncate ${spacious ? "text-base" : ""}`}>{folder.name}</span>
+          {countPill}
         </Link>
       ) : (
         <button onClick={onClick} className={labelClass} style={labelStyle}>
-          <span className="flex min-w-0 items-center gap-1.5">
-            <FolderIcon className="shrink-0 text-zinc-400" />
-            <span className="truncate">{folder.name}</span>
-          </span>
-          <span className="ml-2 shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-xs text-zinc-500 dark:bg-white/10 dark:text-zinc-400">
-            {count}
-          </span>
+          {iconEl}
+          <span className={`min-w-0 flex-1 truncate ${spacious ? "text-base" : ""}`}>{folder.name}</span>
+          {countPill}
         </button>
       )}
       <button
         onClick={startRename}
         aria-label={`Rename ${folder.name}`}
-        className="shrink-0 px-1 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+        className={`shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 ${
+          spacious ? "px-1.5 text-sm" : "px-1 text-xs"
+        }`}
       >
         ✎
       </button>
       <button
         onClick={handleDelete}
         aria-label={`Delete ${folder.name}`}
-        className="shrink-0 px-1 text-xs text-zinc-400 hover:text-red-500"
+        className={`shrink-0 text-zinc-400 hover:text-red-500 ${spacious ? "px-1.5 text-base" : "px-1 text-xs"}`}
       >
         ×
       </button>

@@ -29,13 +29,14 @@ export default async function FoldersPage() {
       {folders.length === 0 ? (
         <p className="text-sm text-zinc-500">You don&apos;t have any folders yet.</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {folders.map((folder) => (
             <FolderRow
               key={folder.id}
               folder={folder}
               count={deckCountByFolder.get(folder.id) ?? 0}
               href={`/decks?folder=${folder.id}`}
+              variant="spacious"
             />
           ))}
         </div>
