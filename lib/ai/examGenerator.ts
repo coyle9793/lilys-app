@@ -5,7 +5,6 @@ export type ExamQuestionType =
   | "multiple_choice"
   | "translate_to_english"
   | "translate_to_chinese"
-  | "fill_in_blank"
   | "short_answer"
   | "writing_task";
 
@@ -33,7 +32,7 @@ export interface GeneratedExam {
 const MAX_VOCAB_CARDS = 150;
 
 const MODE_TYPES: Record<ExamMode, ExamQuestionType[]> = {
-  questions: ["translate_to_english", "translate_to_chinese", "fill_in_blank", "short_answer"],
+  questions: ["translate_to_english", "translate_to_chinese", "short_answer"],
   multiple_choice: ["multiple_choice"],
   reading: ["writing_task"],
 };
@@ -61,8 +60,7 @@ function extractJsonObject(text: string): string {
   return start !== -1 && end > start ? stripped.slice(start, end + 1) : stripped;
 }
 
-const TYPE_PREFIX_PATTERN =
-  /^\s*(?:translate to (?:english|chinese)|fill in the blank|short answer)\s*:\s*/i;
+const TYPE_PREFIX_PATTERN = /^\s*(?:translate to (?:english|chinese)|short answer)\s*:\s*/i;
 
 /**
  * Strips a leaked answer/translation, or a redundant task-type prefix (e.g.
@@ -98,7 +96,7 @@ function modeInstruction(mode: ExamMode, questionCount: number): string {
   if (mode === "reading") {
     return `Generate ONLY "writing_task" questions. Each one is a fresh, self-contained reading passage (e.g. a letter or short note) the student must respond to in writing, with task instructions and a model answer. Generate exactly ${questionCount} separate reading+writing tasks, each about a different topic so they don't repeat. If an example format was given above, closely follow its structure (greeting, sign-off, tone, length target) for EVERY task, not just some of them — this mode should never produce any other question type.`;
   }
-  return `Generate ONLY "translate_to_english", "translate_to_chinese", "fill_in_blank", and "short_answer" questions, using ONLY the vocabulary listed above. Do not generate multiple_choice or writing_task questions.`;
+  return `Generate ONLY "translate_to_english", "translate_to_chinese", and "short_answer" questions, using ONLY the vocabulary listed above. Do not generate multiple_choice or writing_task questions.`;
 }
 
 /**

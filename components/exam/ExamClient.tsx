@@ -12,7 +12,7 @@ const MODE_OPTIONS: { value: ExamMode; label: string; description: string }[] = 
   {
     value: "questions",
     label: "Questions",
-    description: "Short translate/fill-in-the-blank style questions, self-graded.",
+    description: "Short translate/short-answer style questions, self-graded.",
   },
   {
     value: "multiple_choice",
@@ -42,7 +42,6 @@ const TYPE_LABEL: Record<ExamQuestion["type"], string> = {
   multiple_choice: "Multiple choice",
   translate_to_english: "Translate to English",
   translate_to_chinese: "Translate to Chinese",
-  fill_in_blank: "Fill in the blank",
   short_answer: "Short answer",
   writing_task: "Reading & writing",
 };
@@ -366,7 +365,7 @@ function QuestionCard({
     );
   }
 
-  // Free-text types: translate_to_english, translate_to_chinese, fill_in_blank, short_answer.
+  // Free-text types: translate_to_english, translate_to_chinese, short_answer.
   // No reliable way to auto-grade open text, so the student self-grades after seeing the answer.
   return (
     <div className="flex flex-col gap-4">
