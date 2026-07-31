@@ -12,20 +12,28 @@ interface DeckRow {
   dueCount: number;
 }
 
+const ALL = "all";
+const UNFILED = "unfiled";
+const FOLDER_PREFIX = "folder:";
+
 export default function DeckFolders({ folders, decks }: { folders: Folder[]; decks: DeckRow[] }) {
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [view, setView] = useState<string>(ALL);
+  const [addingFolder, setAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [creating, setCreating] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
-  function toggle(id: string) {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const byFolder = new Map<string, DeckRow[]>();
+  const unfiled: DeckRow[] = [];
+  for (const row of decks) {
+    if (row.deck.folder_id) {
+      const list = byFolder.get(row.deck.folder_id) ?? [];
+      list.push(row);
+      byFolder.set(row.deck.folder_id, list);
+    } else {
+      unfiled.push(row);
+    }
   }
 
   async function handleCreateFolder() {
@@ -35,6 +43,7 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
     try {
       await createFolder(name);
       setNewFolderName("");
+      setAddingFolder(false);
     } finally {
       setCreating(false);
     }
@@ -54,110 +63,163 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
       return;
     }
     await deleteFolder(folderId);
+    if (view === FOLDER_PREFIX + folderId) setView(ALL);
   }
 
-  const byFolder = new Map<string, DeckRow[]>();
-  const unfiled: DeckRow[] = [];
-  for (const row of decks) {
-    if (row.deck.folder_id) {
-      const list = byFolder.get(row.deck.folder_id) ?? [];
-      list.push(row);
-      byFolder.set(row.deck.folder_id, list);
-    } else {
-      unfiled.push(row);
-    }
+  let visibleRows: DeckRow[];
+  let heading: string;
+  if (view === ALL) {
+    visibleRows = decks;
+    heading = "All decks";
+  } else if (view === UNFILED) {
+    visibleRows = unfiled;
+    heading = "No folder";
+  } else {
+    const folderId = view.slice(FOLDER_PREFIX.length);
+    visibleRows = byFolder.get(folderId) ?? [];
+    heading = folders.find((f) => f.id === folderId)?.name ?? "Folder";
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2">
-        <input
-          value={newFolderName}
-          onChange={(e) => setNewFolderName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
-          placeholder="New folder name…"
-          className="w-full max-w-xs rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/15"
+    <div className="flex gap-8">
+      <nav className="flex w-44 shrink-0 flex-col gap-0.5">
+        <SidebarButton label="All decks" count={decks.length} active={view === ALL} onClick={() => setView(ALL)} />
+        <SidebarButton
+          label="No folder"
+          count={unfiled.length}
+          active={view === UNFILED}
+          onClick={() => setView(UNFILED)}
         />
-        <button
-          onClick={handleCreateFolder}
-          disabled={creating || !newFolderName.trim()}
-          className="rounded-md border border-black/15 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-white/15"
-        >
-          + New folder
-        </button>
-      </div>
 
-      {folders.map((folder) => {
-        const rows = byFolder.get(folder.id) ?? [];
-        const isCollapsed = collapsed.has(folder.id);
-        const isRenaming = renamingId === folder.id;
-        return (
-          <div key={folder.id} className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              {isRenaming ? (
-                <input
-                  autoFocus
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleRename(folder.id)}
-                  onBlur={() => handleRename(folder.id)}
-                  className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
-                />
-              ) : (
-                <button
-                  onClick={() => toggle(folder.id)}
-                  className="flex items-center gap-1.5 text-left font-medium"
-                >
-                  <span className={`inline-block text-xs transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>
-                    ▾
-                  </span>
-                  {folder.name}
-                  <span className="text-sm font-normal text-zinc-500">({rows.length})</span>
-                </button>
-              )}
-              <div className="ml-auto flex gap-3 text-xs text-zinc-500">
-                <button
-                  onClick={() => {
-                    setRenamingId(folder.id);
-                    setRenameValue(folder.name);
-                  }}
-                  className="hover:underline"
-                >
-                  Rename
-                </button>
-                <button onClick={() => handleDelete(folder.id, folder.name)} className="hover:underline">
-                  Delete
-                </button>
-              </div>
+        <div className="mb-1 mt-4 text-xs font-medium uppercase tracking-wide text-zinc-400">Folders</div>
+
+        {folders.map((folder) => {
+          const key = FOLDER_PREFIX + folder.id;
+          const isRenaming = renamingId === folder.id;
+          if (isRenaming) {
+            return (
+              <input
+                key={folder.id}
+                autoFocus
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleRename(folder.id)}
+                onBlur={() => handleRename(folder.id)}
+                className="rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15"
+              />
+            );
+          }
+          return (
+            <div key={folder.id} className="flex items-center gap-1">
+              <SidebarButton
+                label={folder.name}
+                count={byFolder.get(folder.id)?.length ?? 0}
+                active={view === key}
+                onClick={() => setView(key)}
+                className="min-w-0 flex-1"
+              />
+              <button
+                onClick={() => {
+                  setRenamingId(folder.id);
+                  setRenameValue(folder.name);
+                }}
+                aria-label={`Rename ${folder.name}`}
+                className="shrink-0 px-1 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              >
+                ✎
+              </button>
+              <button
+                onClick={() => handleDelete(folder.id, folder.name)}
+                aria-label={`Delete ${folder.name}`}
+                className="shrink-0 px-1 text-xs text-zinc-400 hover:text-red-500"
+              >
+                ×
+              </button>
             </div>
+          );
+        })}
 
-            {!isCollapsed &&
-              (rows.length === 0 ? (
-                <p className="pl-5 text-sm text-zinc-400">No decks here yet — move one in below.</p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {rows.map((row) => (
-                    <DeckRowItem key={row.deck.id} row={row} folders={folders} />
-                  ))}
-                </ul>
-              ))}
+        {addingFolder ? (
+          <div className="mt-2 flex flex-col gap-1.5">
+            <input
+              autoFocus
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
+              placeholder="Folder name…"
+              className="rounded-md border border-black/15 px-2 py-1.5 text-sm dark:border-white/15"
+            />
+            <div className="flex gap-3 text-xs">
+              <button
+                onClick={handleCreateFolder}
+                disabled={creating || !newFolderName.trim()}
+                className="text-zinc-700 hover:underline disabled:opacity-50 dark:text-zinc-300"
+              >
+                {creating ? "Adding…" : "Add"}
+              </button>
+              <button
+                onClick={() => {
+                  setAddingFolder(false);
+                  setNewFolderName("");
+                }}
+                className="text-zinc-500 hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        );
-      })}
+        ) : (
+          <button
+            onClick={() => setAddingFolder(true)}
+            className="mt-2 rounded-md border border-dashed border-black/20 px-2 py-1.5 text-left text-sm text-zinc-500 dark:border-white/20"
+          >
+            + New folder
+          </button>
+        )}
+      </nav>
 
-      <div className="flex flex-col gap-2">
-        {folders.length > 0 && <h2 className="text-sm font-medium text-zinc-500">No folder</h2>}
-        {unfiled.length === 0 ? (
-          folders.length > 0 && <p className="text-sm text-zinc-400">Everything&apos;s filed away.</p>
+      <div className="min-w-0 flex-1">
+        <h2 className="mb-3 text-sm font-medium text-zinc-500">{heading}</h2>
+        {visibleRows.length === 0 ? (
+          <p className="text-sm text-zinc-400">
+            {view === UNFILED ? "Everything's filed away." : "Nothing here yet."}
+          </p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {unfiled.map((row) => (
+            {visibleRows.map((row) => (
               <DeckRowItem key={row.deck.id} row={row} folders={folders} />
             ))}
           </ul>
         )}
       </div>
     </div>
+  );
+}
+
+function SidebarButton({
+  label,
+  count,
+  active,
+  onClick,
+  className = "",
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center justify-between rounded-md px-2 py-1.5 text-left text-sm ${
+        active ? "font-medium" : "text-zinc-600 dark:text-zinc-400"
+      } ${className}`}
+      style={active ? { background: "var(--accent-btn-bg)", color: "var(--accent-btn-text)" } : undefined}
+    >
+      <span className="truncate">{label}</span>
+      <span className="ml-2 shrink-0 text-xs text-zinc-400">{count}</span>
+    </button>
   );
 }
 

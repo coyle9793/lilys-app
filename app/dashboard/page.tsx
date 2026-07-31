@@ -17,7 +17,7 @@ export default async function DashboardPage() {
   const folders = await getFolders(supabase, user.id).catch(() => []);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-10">
+    <div className="mx-auto w-full max-w-4xl px-6 py-10">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Your decks</h1>
         <div className="flex gap-3">
