@@ -61,9 +61,19 @@ function extractJsonObject(text: string): string {
   return start !== -1 && end > start ? stripped.slice(start, end + 1) : stripped;
 }
 
-/** Strips an answer/translation the model sometimes leaks into the prompt despite being told not to. */
+const TYPE_PREFIX_PATTERN =
+  /^\s*(?:translate to (?:english|chinese)|fill in the blank|short answer)\s*:\s*/i;
+
+/**
+ * Strips a leaked answer/translation, or a redundant task-type prefix (e.g.
+ * "Translate to Chinese: ...") the model sometimes adds despite being told
+ * not to — the app already shows the task type as its own label.
+ */
 function sanitizePrompt(prompt: string): string {
-  return prompt.replace(/\s*[([]\s*(?:answer|translation)\s*:[^)\]]*[)\]]\s*$/i, "").trim();
+  return prompt
+    .replace(/\s*[([]\s*(?:answer|translation)\s*:[^)\]]*[)\]]\s*$/i, "")
+    .replace(TYPE_PREFIX_PATTERN, "")
+    .trim();
 }
 
 function isValidQuestion(q: unknown, allowedTypes: ExamQuestionType[]): q is ExamQuestion {
@@ -136,11 +146,11 @@ ${modeInstruction(mode, questionCount)}
 
 Generate exactly ${questionCount} questions appropriate for that level.
 
-The "prompt" field must contain ONLY the question or task itself — never include the
-answer, a translation, or any hint like "(Answer: ...)" inside it. The correct answer
-goes ONLY in the "answer" field. Every "prompt" must be a clear, complete instruction
-or sentence a student can act on by itself, for example: "Translate to English: 你好"
-or "Fill in the blank: 我___中国人。" — not just a bare word or phrase.
+The "prompt" field must contain ONLY the actual word/sentence to work with — never
+include the answer, a translation, or any hint like "(Answer: ...)" inside it, and
+never prefix it with the task name (e.g. do NOT write "Translate to English: 你好",
+just write "你好" — the app already shows the task type separately). The correct
+answer goes ONLY in the "answer" field.
 
 ${
   mode === "reading"
