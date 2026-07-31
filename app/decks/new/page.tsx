@@ -178,7 +178,7 @@ export default function NewDeckPage() {
           {sections.map((s) => (
             <label
               key={s.id}
-              className={`flex items-start gap-3 rounded-md border bg-background p-3 text-sm ${
+              className={`flex items-start gap-3 rounded-md border bg-card p-3 text-sm ${
                 s.included
                   ? "border-black/10 dark:border-white/10"
                   : "border-black/5 opacity-50 dark:border-white/5"
@@ -255,7 +255,7 @@ export default function NewDeckPage() {
               <div
                 key={c.id}
                 className={`grid grid-cols-[auto_1fr_1fr_2fr_auto] items-center gap-2 rounded-md border p-2 ${
-                  c.found ? "border-black/10 bg-background dark:border-white/10" : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
+                  c.found ? "border-black/10 bg-card dark:border-white/10" : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
                 }`}
               >
                 <input

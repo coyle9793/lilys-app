@@ -36,7 +36,7 @@ export default async function DashboardPage() {
           {decks.map(({ deck, cardCount, dueCount }) => (
             <li
               key={deck.id}
-              className="flex items-center justify-between rounded-lg border border-black/10 bg-background p-4 dark:border-white/10"
+              className="flex items-center justify-between rounded-lg border border-black/10 bg-card p-4 dark:border-white/10"
             >
               <div>
                 <Link href={`/decks/${deck.id}`} className="font-medium hover:underline">

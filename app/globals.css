@@ -8,6 +8,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--accent-card-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -27,9 +28,13 @@ body {
 
 /* Accent colour, chosen via the settings picker and applied as a data-accent
    attribute on <html>. "none"/unset falls back to a neutral outline so the
-   Dashboard button and page look exactly like the rest of the app. */
+   Dashboard button and page look exactly like the rest of the app.
+   --accent-card-bg is used for content "cards" (flashcard rows, deck rows,
+   login/signup boxes) — a white that carries a faint hint of the chosen
+   accent, rather than one fixed shade regardless of colour. */
 :root {
   --accent-page-bg: var(--background);
+  --accent-card-bg: var(--background);
   --accent-btn-bg: transparent;
   --accent-btn-text: var(--foreground);
   --accent-btn-border: rgba(0, 0, 0, 0.18);
@@ -43,36 +48,42 @@ body {
 
 :root[data-accent="sky"] {
   --accent-page-bg: #f0f9ff;
+  --accent-card-bg: #f6fbff;
   --accent-btn-bg: #e0f2fe;
   --accent-btn-text: #075985;
   --accent-btn-border: #bae6fd;
 }
 :root[data-accent="mint"] {
   --accent-page-bg: #f0fdf6;
+  --accent-card-bg: #f6fdf9;
   --accent-btn-bg: #d1fae5;
   --accent-btn-text: #065f46;
   --accent-btn-border: #a7f3d0;
 }
 :root[data-accent="lavender"] {
   --accent-page-bg: #f8f6ff;
+  --accent-card-bg: #fbfaff;
   --accent-btn-bg: #ede9fe;
   --accent-btn-text: #5b21b6;
   --accent-btn-border: #ddd6fe;
 }
 :root[data-accent="peach"] {
   --accent-page-bg: #fff8f0;
+  --accent-card-bg: #fffbf7;
   --accent-btn-bg: #ffedd5;
   --accent-btn-text: #9a3412;
   --accent-btn-border: #fed7aa;
 }
 :root[data-accent="rose"] {
   --accent-page-bg: #fff5f8;
+  --accent-card-bg: #fef8fa;
   --accent-btn-bg: #fce7f3;
   --accent-btn-text: #9d174d;
   --accent-btn-border: #fbcfe8;
 }
 :root[data-accent="butter"] {
   --accent-page-bg: #fffbeb;
+  --accent-card-bg: #fffdf5;
   --accent-btn-bg: #fef3c7;
   --accent-btn-text: #92400e;
   --accent-btn-border: #fde68a;
@@ -81,36 +92,42 @@ body {
 @media (prefers-color-scheme: dark) {
   :root[data-accent="sky"] {
     --accent-page-bg: #0a1622;
+    --accent-card-bg: #0e1f2e;
     --accent-btn-bg: rgba(3, 105, 161, 0.28);
     --accent-btn-text: #7dd3fc;
     --accent-btn-border: rgba(125, 211, 252, 0.35);
   }
   :root[data-accent="mint"] {
     --accent-page-bg: #08160f;
+    --accent-card-bg: #0c1f16;
     --accent-btn-bg: rgba(6, 95, 70, 0.3);
     --accent-btn-text: #6ee7b7;
     --accent-btn-border: rgba(110, 231, 183, 0.35);
   }
   :root[data-accent="lavender"] {
     --accent-page-bg: #120f1e;
+    --accent-card-bg: #181428;
     --accent-btn-bg: rgba(91, 33, 182, 0.32);
     --accent-btn-text: #c4b5fd;
     --accent-btn-border: rgba(196, 181, 253, 0.35);
   }
   :root[data-accent="peach"] {
     --accent-page-bg: #1c130a;
+    --accent-card-bg: #241a0e;
     --accent-btn-bg: rgba(154, 52, 18, 0.3);
     --accent-btn-text: #fdba74;
     --accent-btn-border: rgba(253, 186, 116, 0.35);
   }
   :root[data-accent="rose"] {
     --accent-page-bg: #1c0e14;
+    --accent-card-bg: #241219;
     --accent-btn-bg: rgba(157, 23, 77, 0.3);
     --accent-btn-text: #f9a8d4;
     --accent-btn-border: rgba(249, 168, 212, 0.35);
   }
   :root[data-accent="butter"] {
     --accent-page-bg: #1c1506;
+    --accent-card-bg: #241c0a;
     --accent-btn-bg: rgba(146, 64, 14, 0.3);
     --accent-btn-text: #fcd34d;
     --accent-btn-border: rgba(252, 211, 77, 0.35);
