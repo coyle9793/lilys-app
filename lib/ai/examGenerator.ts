@@ -43,6 +43,24 @@ function stripCodeFence(text: string): string {
   return fenced ? fenced[1] : text;
 }
 
+/**
+ * Best-effort recovery for a Gemini response that isn't quite clean JSON —
+ * trims stray text before/after the object (despite being told not to
+ * include any) by taking the outermost {...} span before giving up.
+ */
+function extractJsonObject(text: string): string {
+  const stripped = stripCodeFence(text).trim();
+  try {
+    JSON.parse(stripped);
+    return stripped;
+  } catch {
+    // Fall through to bracket-matching below.
+  }
+  const start = stripped.indexOf("{");
+  const end = stripped.lastIndexOf("}");
+  return start !== -1 && end > start ? stripped.slice(start, end + 1) : stripped;
+}
+
 function isValidQuestion(q: unknown, allowedTypes: ExamQuestionType[]): q is ExamQuestion {
   if (typeof q !== "object" || q === null) return false;
   const question = q as Record<string, unknown>;
@@ -119,7 +137,9 @@ ${
     : ""
 }
 
-Respond with ONLY valid JSON (no markdown, no code fences, no explanation) matching exactly this shape:
+Respond with ONLY valid JSON (no markdown, no code fences, no explanation, nothing before or
+after the object). Escape any double-quote or backslash characters that appear inside a string
+value (e.g. \\" ) so the JSON stays valid. Match exactly this shape:
 {
   "level": "<short level description>",
   "questions": [
@@ -134,32 +154,45 @@ Respond with ONLY valid JSON (no markdown, no code fences, no explanation) match
   ]
 }`;
 
-  const result = await callGemini(prompt, {
-    maxOutputTokens: mode === "reading" ? 8000 : 6000,
-    timeoutMs: mode === "reading" ? 90_000 : 75_000,
-  });
-  if (!result.ok) throw new Error(result.error);
+  const ATTEMPTS = 2;
+  let lastError = new Error("Couldn't generate the exam — please try again.");
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(stripCodeFence(result.text));
-  } catch (err) {
-    console.error("Failed to parse generated exam JSON:", err, result.text);
-    throw new Error("Gemini's response couldn't be parsed as JSON — try generating again.");
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    const result = await callGemini(prompt, {
+      maxOutputTokens: mode === "reading" ? 8000 : 6000,
+      timeoutMs: mode === "reading" ? 90_000 : 75_000,
+    });
+    if (!result.ok) {
+      lastError = new Error(result.error);
+      continue;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(extractJsonObject(result.text));
+    } catch (err) {
+      console.error(`Failed to parse generated exam JSON (attempt ${attempt}/${ATTEMPTS}):`, err, result.text);
+      lastError = new Error("Gemini's response couldn't be parsed as JSON — try generating again.");
+      continue;
+    }
+
+    const level = (parsed as { level?: unknown })?.level;
+    const questionsRaw = (parsed as { questions?: unknown })?.questions;
+    if (typeof level !== "string" || !Array.isArray(questionsRaw)) {
+      console.error(`Generated exam had unexpected shape (attempt ${attempt}/${ATTEMPTS}):`, result.text);
+      lastError = new Error("Gemini's response wasn't in the expected format — try generating again.");
+      continue;
+    }
+
+    const questions = questionsRaw.filter((q: unknown): q is ExamQuestion => isValidQuestion(q, allowedTypes));
+    if (questions.length === 0) {
+      console.error(`Generated exam had no valid questions for mode ${mode} (attempt ${attempt}/${ATTEMPTS}):`, result.text);
+      lastError = new Error("Gemini didn't return any usable questions for this mode — try generating again.");
+      continue;
+    }
+
+    return { level, questions, markingCriteria: markingCriteria?.trim() || undefined };
   }
 
-  const level = (parsed as { level?: unknown })?.level;
-  const questionsRaw = (parsed as { questions?: unknown })?.questions;
-  if (typeof level !== "string" || !Array.isArray(questionsRaw)) {
-    console.error("Generated exam had unexpected shape:", result.text);
-    throw new Error("Gemini's response wasn't in the expected format — try generating again.");
-  }
-
-  const questions = questionsRaw.filter((q: unknown): q is ExamQuestion => isValidQuestion(q, allowedTypes));
-  if (questions.length === 0) {
-    console.error("Generated exam had no valid questions for mode", mode, ":", result.text);
-    throw new Error("Gemini didn't return any usable questions for this mode — try generating again.");
-  }
-
-  return { level, questions, markingCriteria: markingCriteria?.trim() || undefined };
+  throw lastError;
 }
