@@ -82,19 +82,24 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
 
   return (
     <div className="flex gap-8">
-      <nav className="flex w-44 shrink-0 flex-col gap-0.5">
-        <SidebarButton label="All decks" count={decks.length} active={view === ALL} onClick={() => setView(ALL)} />
-        <SidebarButton
-          label="No folder"
-          count={unfiled.length}
-          active={view === UNFILED}
-          onClick={() => setView(UNFILED)}
-        />
+      <nav className="flex w-48 shrink-0 flex-col gap-1.5 rounded-xl border border-black/10 bg-card p-3 dark:border-white/10">
+        <SidebarRow active={view === ALL}>
+          <SidebarLabel label="All decks" count={decks.length} active={view === ALL} onClick={() => setView(ALL)} />
+        </SidebarRow>
+        <SidebarRow active={view === UNFILED}>
+          <SidebarLabel
+            label="No folder"
+            count={unfiled.length}
+            active={view === UNFILED}
+            onClick={() => setView(UNFILED)}
+          />
+        </SidebarRow>
 
-        <div className="mb-1 mt-4 text-xs font-medium uppercase tracking-wide text-zinc-400">Folders</div>
+        <div className="mb-1 mt-3 text-xs font-medium uppercase tracking-wide text-zinc-400">Folders</div>
 
         {folders.map((folder) => {
           const key = FOLDER_PREFIX + folder.id;
+          const isActive = view === key;
           const isRenaming = renamingId === folder.id;
           if (isRenaming) {
             return (
@@ -110,14 +115,8 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
             );
           }
           return (
-            <div key={folder.id} className="flex items-center gap-1">
-              <SidebarButton
-                label={folder.name}
-                count={byFolder.get(folder.id)?.length ?? 0}
-                active={view === key}
-                onClick={() => setView(key)}
-                className="min-w-0 flex-1"
-              />
+            <SidebarRow key={folder.id} active={isActive}>
+              <SidebarLabel label={folder.name} count={byFolder.get(folder.id)?.length ?? 0} active={isActive} onClick={() => setView(key)} />
               <button
                 onClick={() => {
                   setRenamingId(folder.id);
@@ -135,7 +134,7 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
               >
                 ×
               </button>
-            </div>
+            </SidebarRow>
           );
         })}
 
@@ -196,26 +195,44 @@ export default function DeckFolders({ folders, decks }: { folders: Folder[]; dec
   );
 }
 
-function SidebarButton({
+/** The bordered box that gives each sidebar entry its own visible separation. */
+function SidebarRow({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-0.5 rounded-md border px-1 ${
+        active ? "" : "border-black/10 dark:border-white/10"
+      }`}
+      style={active ? { background: "var(--accent-btn-bg)", borderColor: "var(--accent-btn-border)" } : undefined}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SidebarLabel({
   label,
   count,
   active,
   onClick,
-  className = "",
 }: {
   label: string;
   count: number;
   active: boolean;
   onClick: () => void;
-  className?: string;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-between rounded-md px-2 py-1.5 text-left text-sm ${
+      className={`flex min-w-0 flex-1 items-center justify-between px-1 py-1.5 text-left text-sm ${
         active ? "font-medium" : "text-zinc-600 dark:text-zinc-400"
-      } ${className}`}
-      style={active ? { background: "var(--accent-btn-bg)", color: "var(--accent-btn-text)" } : undefined}
+      }`}
+      style={active ? { color: "var(--accent-btn-text)" } : undefined}
     >
       <span className="truncate">{label}</span>
       <span className="ml-2 shrink-0 text-xs text-zinc-400">{count}</span>
