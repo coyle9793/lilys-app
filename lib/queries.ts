@@ -68,6 +68,34 @@ export async function getDeckWithCards(supabase: SupabaseClient, deckId: string)
   return { deck: deck as Deck, cards: (cards ?? []) as Card[] };
 }
 
+/** Combines cards from multiple decks (e.g. for a cross-deck exam) — only decks the user owns are included. */
+export async function getDecksWithCardsByIds(
+  supabase: SupabaseClient,
+  deckIds: string[],
+  userId: string,
+) {
+  if (deckIds.length === 0) return { decks: [] as Deck[], cards: [] as Card[] };
+
+  const { data: decks, error: decksError } = await supabase
+    .from("decks")
+    .select("*")
+    .in("id", deckIds)
+    .eq("user_id", userId);
+  if (decksError) throw new Error(decksError.message);
+
+  const ownedIds = (decks as Deck[]).map((d) => d.id);
+  if (ownedIds.length === 0) return { decks: [] as Deck[], cards: [] as Card[] };
+
+  const { data: cards, error: cardsError } = await supabase
+    .from("cards")
+    .select("*")
+    .in("deck_id", ownedIds)
+    .order("created_at", { ascending: true });
+  if (cardsError) throw new Error(cardsError.message);
+
+  return { decks: decks as Deck[], cards: (cards ?? []) as Card[] };
+}
+
 export async function getProgressForCards(
   supabase: SupabaseClient,
   userId: string,

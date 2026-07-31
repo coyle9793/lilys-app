@@ -31,7 +31,17 @@ const COUNT_OPTIONS: Record<ExamMode, number[]> = {
   reading: [1, 2, 3, 5],
 };
 
-export default function ExamClient({ deckId, cardCount }: { deckId: string; cardCount: number }) {
+export default function ExamClient({
+  deckIds,
+  cardCount,
+  backHref = "/dashboard",
+  backLabel = "Back to dashboard",
+}: {
+  deckIds: string[];
+  cardCount: number;
+  backHref?: string;
+  backLabel?: string;
+}) {
   const [step, setStep] = useState<Step>("setup");
   const [mode, setMode] = useState<ExamMode>("questions");
   const [questionCount, setQuestionCount] = useState(10);
@@ -75,7 +85,7 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
       const res = await fetch("/api/generate-exam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deckId, questionCount, mode, exampleFormatText, markingCriteria }),
+        body: JSON.stringify({ deckIds, questionCount, mode, exampleFormatText, markingCriteria }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Couldn't generate the exam.");
@@ -115,10 +125,10 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
     return (
       <div className="flex flex-col gap-4">
         <p className="text-sm text-zinc-500">
-          Generates an AI-written exam from this deck&apos;s {cardCount} card
-          {cardCount === 1 ? "" : "s"}. The AI estimates a rough level from your
-          vocabulary and writes questions to match — treat both as a helpful guide,
-          not a certified score.
+          Generates an AI-written exam from {cardCount} card{cardCount === 1 ? "" : "s"} across{" "}
+          {deckIds.length === 1 ? "this deck" : `${deckIds.length} decks`}. The AI estimates a
+          rough level from your vocabulary and writes questions to match — treat both as a
+          helpful guide, not a certified score.
         </p>
 
         <div className="flex flex-col gap-2 text-sm">
@@ -227,10 +237,10 @@ export default function ExamClient({ deckId, cardCount }: { deckId: string; card
             Generate another
           </button>
           <Link
-            href={`/decks/${deckId}`}
+            href={backHref}
             className="rounded-md border border-black/15 px-4 py-2 text-sm dark:border-white/15"
           >
-            Back to deck
+            {backLabel}
           </Link>
         </div>
       </div>

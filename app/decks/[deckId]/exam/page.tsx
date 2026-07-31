@@ -32,7 +32,12 @@ export default async function ExamPage({
           setup — the same key powers this).
         </p>
       ) : (
-        <ExamClient deckId={deck.id} cardCount={cards.length} />
+        <ExamClient
+          deckIds={[deck.id]}
+          cardCount={cards.length}
+          backHref={`/decks/${deck.id}`}
+          backLabel="Back to deck"
+        />
       )}
     </div>
   );
