@@ -20,6 +20,12 @@ export async function getFolders(supabase: SupabaseClient, userId: string) {
   return data as Folder[];
 }
 
+export async function getCoins(supabase: SupabaseClient, userId: string): Promise<number> {
+  const { data, error } = await supabase.from("profiles").select("coins").eq("id", userId).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.coins ?? 0;
+}
+
 export async function getNotes(supabase: SupabaseClient, userId: string) {
   const { data, error } = await supabase
     .from("notes")

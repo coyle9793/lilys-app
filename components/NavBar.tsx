@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCoins } from "@/lib/queries";
 import { logout } from "@/lib/actions/auth";
 import ThemeSettings from "./ThemeSettings";
 import { HomeIcon } from "./icons";
@@ -9,6 +10,10 @@ export default async function NavBar() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Falls back to 0 (rather than a broken nav bar) for accounts that
+  // haven't run the coins migration (supabase/migrations/0003_add_coins.sql) yet.
+  const coins = user ? await getCoins(supabase, user.id).catch(() => 0) : 0;
 
   return (
     <header
@@ -32,6 +37,12 @@ export default async function NavBar() {
               <HomeIcon />
               Dashboard
             </Link>
+            <span
+              className="inline-flex items-center gap-1 rounded-full border border-black/15 bg-background px-3 py-1 text-xs font-semibold dark:border-white/15"
+              title="Coins — earned by completing study sessions of more than 10 cards"
+            >
+              🪙 {coins}
+            </span>
             <ThemeSettings />
             <span className="text-zinc-500">{user.email}</span>
             <form action={logout}>

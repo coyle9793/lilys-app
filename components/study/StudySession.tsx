@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Card } from "@/lib/types";
 import type { Grade } from "@/lib/srs/sm2";
 import { recordReview } from "@/lib/actions/study";
+import { awardCoinsForSession } from "@/lib/actions/coins";
 import { shuffle } from "./shuffle";
 import Flashcard from "./Flashcard";
 import MultipleChoice from "./MultipleChoice";
@@ -37,7 +38,11 @@ export default function StudySession({
 
   async function handleGrade(card: Card, grade: Grade) {
     await recordReview(deckId, card.id, grade);
-    setIndex((i) => i + 1);
+    const nextIndex = index + 1;
+    setIndex(nextIndex);
+    if (queue && nextIndex === queue.length) {
+      await awardCoinsForSession(queue.length);
+    }
   }
 
   const current = queue?.[index];

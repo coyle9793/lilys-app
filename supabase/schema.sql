@@ -37,6 +37,11 @@ create table if not exists card_progress (
   unique (card_id, user_id)
 );
 
+create table if not exists profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  coins integer not null default 0
+);
+
 create table if not exists notes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -59,6 +64,7 @@ alter table folders enable row level security;
 alter table decks enable row level security;
 alter table cards enable row level security;
 alter table card_progress enable row level security;
+alter table profiles enable row level security;
 alter table notes enable row level security;
 
 create policy "folders are owned by their creator" on folders
@@ -79,3 +85,6 @@ create policy "card_progress is owned by its creator" on card_progress
 
 create policy "notes are owned by their creator" on notes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "profiles are owned by their creator" on profiles
+  for all using (auth.uid() = id) with check (auth.uid() = id);
