@@ -12,7 +12,11 @@ export default async function NavBar() {
 
   return (
     <header className="flex items-center justify-between border-b border-black/10 px-6 py-4 dark:border-white/10">
-      <Link href={user ? "/dashboard" : "/"} className="text-lg font-semibold">
+      <Link
+        href={user ? "/dashboard" : "/"}
+        className="text-lg font-semibold"
+        style={{ color: "var(--accent-btn-text)" }}
+      >
         汉字 Flashcards
       </Link>
       <nav className="flex items-center gap-4 text-sm">
@@ -20,12 +24,7 @@ export default async function NavBar() {
           <>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
-              style={{
-                background: "var(--accent-btn-bg)",
-                color: "var(--accent-btn-text)",
-                borderColor: "var(--accent-btn-border)",
-              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-black/15 bg-background px-3 py-1 text-xs font-semibold dark:border-white/15"
             >
               <HomeIcon />
               Dashboard
