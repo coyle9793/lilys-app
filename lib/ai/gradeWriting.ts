@@ -41,7 +41,7 @@ export async function gradeWriting(
   taskPrompt: string,
   studentResponse: string,
   markingCriteria?: string,
-): Promise<WritingFeedback | null> {
+): Promise<WritingFeedback> {
   const rubric = markingCriteria?.trim() ? markingCriteria.trim().slice(0, 2000) : DEFAULT_RUBRIC;
 
   const prompt = `You are marking a Chinese language student's written response to a reading-and-writing task, using a UK university marking scheme.
@@ -77,29 +77,33 @@ Respond with ONLY valid JSON (no markdown, no code fences, no explanation) match
   "feedback": "<2-4 sentences of feedback>"
 }`;
 
-  const raw = await callGemini(prompt, { maxOutputTokens: 2500, timeoutMs: 45_000 });
-  if (!raw) return null;
+  const result = await callGemini(prompt, { maxOutputTokens: 2500, timeoutMs: 45_000 });
+  if (!result.ok) throw new Error(result.error);
 
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(stripCodeFence(raw));
-    const s = parsed?.scores;
-    if (typeof s !== "object" || s === null || typeof parsed?.feedback !== "string") {
-      console.error("Writing feedback had unexpected shape:", raw);
-      return null;
-    }
-    const scores = {
-      content: clampScore(s.content),
-      coherence: clampScore(s.coherence),
-      language: clampScore(s.language),
-      accuracy: clampScore(s.accuracy),
-      characters: clampScore(s.characters),
-    };
-    const score = Math.round(
-      (scores.content + scores.coherence + scores.language + scores.accuracy + scores.characters) / 5,
-    );
-    return { score, classification: classifyMark(score), scores, feedback: parsed.feedback };
+    parsed = JSON.parse(stripCodeFence(result.text));
   } catch (err) {
-    console.error("Failed to parse writing feedback JSON:", err, raw);
-    return null;
+    console.error("Failed to parse writing feedback JSON:", err, result.text);
+    throw new Error("Gemini's response couldn't be parsed as JSON — try again.");
   }
+
+  const s = (parsed as { scores?: Record<string, unknown> })?.scores;
+  const feedback = (parsed as { feedback?: unknown })?.feedback;
+  if (typeof s !== "object" || s === null || typeof feedback !== "string") {
+    console.error("Writing feedback had unexpected shape:", result.text);
+    throw new Error("Gemini's response wasn't in the expected format — try again.");
+  }
+
+  const scores = {
+    content: clampScore(s.content),
+    coherence: clampScore(s.coherence),
+    language: clampScore(s.language),
+    accuracy: clampScore(s.accuracy),
+    characters: clampScore(s.characters),
+  };
+  const score = Math.round(
+    (scores.content + scores.coherence + scores.language + scores.accuracy + scores.characters) / 5,
+  );
+  return { score, classification: classifyMark(score), scores, feedback };
 }

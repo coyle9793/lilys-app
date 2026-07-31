@@ -20,10 +20,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing task or response" }, { status: 400 });
   }
 
-  const result = await gradeWriting(passage, taskPrompt, studentResponse, markingCriteria);
-  if (!result) {
-    return NextResponse.json({ error: "Couldn't get feedback — please try again." }, { status: 502 });
+  try {
+    const result = await gradeWriting(passage, taskPrompt, studentResponse, markingCriteria);
+    return NextResponse.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Couldn't get feedback — please try again.";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
-
-  return NextResponse.json(result);
 }

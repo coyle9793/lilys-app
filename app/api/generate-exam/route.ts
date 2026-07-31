@@ -46,19 +46,17 @@ export async function POST(request: Request) {
   // Each "reading" question is a full passage + reply task, so keep the count small.
   const maxCount = mode === "reading" ? 5 : 30;
 
-  const exam = await generateExam(
-    cards,
-    Math.min(Math.max(questionCount, 1), maxCount),
-    mode,
-    exampleFormatText,
-    markingCriteria,
-  );
-  if (!exam) {
-    return NextResponse.json(
-      { error: "Couldn't generate the exam — please try again." },
-      { status: 502 },
+  try {
+    const exam = await generateExam(
+      cards,
+      Math.min(Math.max(questionCount, 1), maxCount),
+      mode,
+      exampleFormatText,
+      markingCriteria,
     );
+    return NextResponse.json(exam);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Couldn't generate the exam — please try again.";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
-
-  return NextResponse.json(exam);
 }

@@ -15,5 +15,6 @@ export async function suggestHanziWithGemini(
 Pinyin: ${pinyin}
 English translation: ${translation}`;
 
-  return callGemini(prompt, { maxOutputTokens: 200 });
+  const result = await callGemini(prompt, { maxOutputTokens: 200 });
+  return result.ok ? result.text : null;
 }

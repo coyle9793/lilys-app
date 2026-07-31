@@ -73,10 +73,10 @@ function modeInstruction(mode: ExamMode, questionCount: number): string {
  * `mode` picks a single question style for the whole exam (short-answer
  * style questions, multiple choice, or reading-passage-plus-written-reply)
  * so the result is consistent rather than an unpredictable mix. Optionally
- * matches the style of an example exam the user provides. Returns null if
- * generation or parsing fails (no key configured, API error, or a malformed
- * response) — the caller should show a clear error rather than a fabricated
- * exam.
+ * matches the style of an example exam the user provides. Throws with a
+ * specific, user-facing message if generation or parsing fails (no key
+ * configured, a Gemini API error, or a malformed response) — the caller
+ * should surface that message rather than showing a generic failure.
  */
 export async function generateExam(
   cards: Card[],
@@ -84,7 +84,7 @@ export async function generateExam(
   mode: ExamMode,
   exampleFormatText?: string,
   markingCriteria?: string,
-): Promise<GeneratedExam | null> {
+): Promise<GeneratedExam> {
   const allowedTypes = MODE_TYPES[mode];
 
   const vocabList = cards
@@ -134,28 +134,32 @@ Respond with ONLY valid JSON (no markdown, no code fences, no explanation) match
   ]
 }`;
 
-  const raw = await callGemini(prompt, {
+  const result = await callGemini(prompt, {
     maxOutputTokens: mode === "reading" ? 8000 : 6000,
     timeoutMs: mode === "reading" ? 90_000 : 75_000,
   });
-  if (!raw) return null;
+  if (!result.ok) throw new Error(result.error);
 
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(stripCodeFence(raw));
-    if (typeof parsed?.level !== "string" || !Array.isArray(parsed?.questions)) {
-      console.error("Generated exam had unexpected shape:", raw);
-      return null;
-    }
-    const questions = parsed.questions.filter((q: unknown): q is ExamQuestion =>
-      isValidQuestion(q, allowedTypes),
-    );
-    if (questions.length === 0) {
-      console.error("Generated exam had no valid questions for mode", mode, ":", raw);
-      return null;
-    }
-    return { level: parsed.level, questions, markingCriteria: markingCriteria?.trim() || undefined };
+    parsed = JSON.parse(stripCodeFence(result.text));
   } catch (err) {
-    console.error("Failed to parse generated exam JSON:", err, raw);
-    return null;
+    console.error("Failed to parse generated exam JSON:", err, result.text);
+    throw new Error("Gemini's response couldn't be parsed as JSON — try generating again.");
   }
+
+  const level = (parsed as { level?: unknown })?.level;
+  const questionsRaw = (parsed as { questions?: unknown })?.questions;
+  if (typeof level !== "string" || !Array.isArray(questionsRaw)) {
+    console.error("Generated exam had unexpected shape:", result.text);
+    throw new Error("Gemini's response wasn't in the expected format — try generating again.");
+  }
+
+  const questions = questionsRaw.filter((q: unknown): q is ExamQuestion => isValidQuestion(q, allowedTypes));
+  if (questions.length === 0) {
+    console.error("Generated exam had no valid questions for mode", mode, ":", result.text);
+    throw new Error("Gemini didn't return any usable questions for this mode — try generating again.");
+  }
+
+  return { level, questions, markingCriteria: markingCriteria?.trim() || undefined };
 }
