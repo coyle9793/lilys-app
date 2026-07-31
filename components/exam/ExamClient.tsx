@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { ExamMode, ExamQuestion, GeneratedExam } from "@/lib/ai/examGenerator";
 import { classifyMark, type WritingFeedback } from "@/lib/ai/writingScore";
+import { awardExamCoins } from "@/lib/actions/coins";
 
 type Step = "setup" | "taking" | "results";
 
@@ -30,6 +31,12 @@ const COUNT_OPTIONS: Record<ExamMode, number[]> = {
   multiple_choice: [5, 10, 15, 20],
   reading: [1, 2, 3, 5],
 };
+
+const COINS_PER_CORRECT: Record<"questions" | "multiple_choice", number> = {
+  multiple_choice: 1,
+  questions: 2,
+};
+const CHARS_PER_COIN = 5;
 
 export default function ExamClient({
   deckIds,
@@ -58,6 +65,7 @@ export default function ExamClient({
   const [checked, setChecked] = useState(false);
   const [results, setResults] = useState<boolean[]>([]);
   const [writingScores, setWritingScores] = useState<number[]>([]);
+  const [writingCharCounts, setWritingCharCounts] = useState<number[]>([]);
 
   async function handleExampleFile(file: File) {
     setExtracting(true);
@@ -92,6 +100,8 @@ export default function ExamClient({
       setExam(data as GeneratedExam);
       setIndex(0);
       setResults([]);
+      setWritingScores([]);
+      setWritingCharCounts([]);
       setStep("taking");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't generate the exam.");
@@ -100,25 +110,33 @@ export default function ExamClient({
     }
   }
 
-  function advance() {
+  function advance(updatedResults: boolean[], updatedWritingCharCounts: number[]) {
     setSelected(null);
     setFreeText("");
     setChecked(false);
     if (exam && index + 1 >= exam.questions.length) {
       setStep("results");
+      const coins =
+        mode === "reading"
+          ? updatedWritingCharCounts.reduce((sum, c) => sum + Math.floor(c / CHARS_PER_COIN), 0)
+          : updatedResults.filter(Boolean).length * COINS_PER_CORRECT[mode];
+      if (coins > 0) awardExamCoins(coins);
     } else {
       setIndex((i) => i + 1);
     }
   }
 
   function recordResult(correct: boolean) {
-    setResults((prev) => [...prev, correct]);
-    advance();
+    const updated = [...results, correct];
+    setResults(updated);
+    advance(updated, writingCharCounts);
   }
 
-  function recordWritingScore(score: number) {
+  function recordWritingScore(score: number, charCount: number) {
     setWritingScores((prev) => [...prev, score]);
-    advance();
+    const updatedCharCounts = [...writingCharCounts, charCount];
+    setWritingCharCounts(updatedCharCounts);
+    advance(results, updatedCharCounts);
   }
 
   if (step === "setup") {
@@ -403,7 +421,7 @@ function WritingTaskCard({
 }: {
   question: ExamQuestion;
   markingCriteria?: string;
-  onScored: (score: number) => void;
+  onScored: (score: number, charCount: number) => void;
 }) {
   const [response, setResponse] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -495,7 +513,7 @@ function WritingTaskCard({
             <p>{feedback.feedback}</p>
           </div>
           <button
-            onClick={() => onScored(feedback.score)}
+            onClick={() => onScored(feedback.score, charCount)}
             className="self-start rounded-md bg-foreground px-4 py-2 text-sm text-background"
           >
             Next
