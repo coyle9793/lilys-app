@@ -27,21 +27,25 @@ export default function StudySession({
   const [cardSet, setCardSet] = useState<CardSet>(dueCards.length > 0 ? "due" : "all");
   const [queue, setQueue] = useState<Card[] | null>(null);
   const [index, setIndex] = useState(0);
+  const [wrongCards, setWrongCards] = useState<Card[]>([]);
 
   const canUseMultipleChoice = allCards.length >= 2;
 
-  function start() {
-    const source = cardSet === "due" ? dueCards : allCards;
-    setQueue(shuffle(source));
+  function start(cards: Card[]) {
+    setQueue(shuffle(cards));
     setIndex(0);
+    setWrongCards([]);
   }
 
   async function handleGrade(card: Card, grade: Grade) {
     await recordReview(deckId, card.id, grade);
+    const correct = grade !== "again";
+    const updatedWrongCards = correct ? wrongCards : [...wrongCards, card];
+    setWrongCards(updatedWrongCards);
     const nextIndex = index + 1;
     setIndex(nextIndex);
     if (queue && nextIndex === queue.length) {
-      await awardCoinsForSession(queue.length);
+      await awardCoinsForSession(queue.length, queue.length - updatedWrongCards.length);
     }
   }
 
@@ -79,7 +83,7 @@ export default function StudySession({
             <button
               onClick={() => {
                 setMode("flip");
-                start();
+                start(cardSet === "due" ? dueCards : allCards);
               }}
               disabled={(cardSet === "due" ? dueCards : allCards).length === 0}
               className="rounded-md border border-black/15 px-4 py-2 text-sm disabled:opacity-40 dark:border-white/15"
@@ -89,7 +93,7 @@ export default function StudySession({
             <button
               onClick={() => {
                 setMode("choice");
-                start();
+                start(cardSet === "due" ? dueCards : allCards);
               }}
               disabled={!canUseMultipleChoice || (cardSet === "due" ? dueCards : allCards).length === 0}
               className="rounded-md border border-black/15 px-4 py-2 text-sm disabled:opacity-40 dark:border-white/15"
@@ -99,7 +103,7 @@ export default function StudySession({
             <button
               onClick={() => {
                 setMode("typing");
-                start();
+                start(cardSet === "due" ? dueCards : allCards);
               }}
               disabled={(cardSet === "due" ? dueCards : allCards).length === 0}
               className="rounded-md border border-black/15 px-4 py-2 text-sm disabled:opacity-40 dark:border-white/15"
@@ -113,19 +117,29 @@ export default function StudySession({
   }
 
   if (!current) {
+    const total = queue.length;
+    const correctCount = total - wrongCards.length;
     return (
       <div className="flex flex-col items-center gap-4 py-12">
         <p className="text-lg font-medium">Session complete 🎉</p>
-        <div className="flex gap-3">
+        <p className="text-2xl font-semibold">
+          {correctCount} / {total} correct
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
           <button
-            onClick={() => {
-              setMode(null);
-              setQueue(null);
-            }}
+            onClick={() => start(queue)}
             className="rounded-md bg-foreground px-4 py-2 text-sm text-background"
           >
-            Study again
+            Retry all {total}
           </button>
+          {wrongCards.length > 0 && (
+            <button
+              onClick={() => start(wrongCards)}
+              className="rounded-md border border-black/15 px-4 py-2 text-sm dark:border-white/15"
+            >
+              Retry {wrongCards.length} incorrect
+            </button>
+          )}
           <Link href={`/decks/${deckId}`} className="rounded-md border border-black/15 px-4 py-2 text-sm dark:border-white/15">
             Back to deck
           </Link>
