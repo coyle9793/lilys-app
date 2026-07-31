@@ -21,7 +21,7 @@ export default async function DashboardPage() {
             href="/exam/new"
             className="rounded-md border px-4 py-2 text-sm"
             style={{
-              background: "var(--accent-btn-bg)",
+              background: "transparent",
               color: "var(--accent-btn-text)",
               borderColor: "var(--accent-btn-border)",
             }}
@@ -30,11 +30,10 @@ export default async function DashboardPage() {
           </Link>
           <Link
             href="/decks/new"
-            className="rounded-md border px-4 py-2 text-sm"
+            className="rounded-md px-4 py-2 text-sm font-medium"
             style={{
-              background: "var(--accent-btn-bg)",
-              color: "var(--accent-btn-text)",
-              borderColor: "var(--accent-btn-border)",
+              background: "var(--accent-btn-solid-bg)",
+              color: "var(--accent-btn-solid-text)",
             }}
           >
             + Import slides
