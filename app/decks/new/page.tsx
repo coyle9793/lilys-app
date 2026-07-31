@@ -437,7 +437,7 @@ export default function NewDeckPage() {
           </button>
         )}
 
-        <button onClick={() => router.push("/dashboard")} className="self-start text-sm text-zinc-500 hover:underline">
+        <button onClick={() => router.push("/decks")} className="self-start text-sm text-zinc-500 hover:underline">
           Cancel
         </button>
       </div>

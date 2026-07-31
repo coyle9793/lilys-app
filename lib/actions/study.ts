@@ -39,4 +39,5 @@ export async function recordReview(deckId: string, cardId: string, grade: Grade)
 
   revalidatePath(`/decks/${deckId}/study`);
   revalidatePath("/dashboard");
+  revalidatePath("/decks");
 }

@@ -34,8 +34,8 @@ const COUNT_OPTIONS: Record<ExamMode, number[]> = {
 export default function ExamClient({
   deckIds,
   cardCount,
-  backHref = "/dashboard",
-  backLabel = "Back to dashboard",
+  backHref = "/decks",
+  backLabel = "Back to decks",
 }: {
   deckIds: string[];
   cardCount: number;

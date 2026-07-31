@@ -39,6 +39,7 @@ export async function createDeck(title: string, cards: NewCardInput[]) {
   }
 
   revalidatePath("/dashboard");
+  revalidatePath("/decks");
   redirect(`/decks/${deck.id}`);
 }
 
@@ -48,6 +49,7 @@ export async function renameDeck(deckId: string, title: string) {
   if (error) throw new Error(error.message);
   revalidatePath(`/decks/${deckId}`);
   revalidatePath("/dashboard");
+  revalidatePath("/decks");
 }
 
 export async function moveDeckToFolder(deckId: string, folderId: string | null) {
@@ -55,6 +57,7 @@ export async function moveDeckToFolder(deckId: string, folderId: string | null) 
   const { error } = await supabase.from("decks").update({ folder_id: folderId }).eq("id", deckId);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
+  revalidatePath("/decks");
 }
 
 export async function deleteDeck(deckId: string) {
@@ -62,7 +65,8 @@ export async function deleteDeck(deckId: string) {
   const { error } = await supabase.from("decks").delete().eq("id", deckId);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  revalidatePath("/decks");
+  redirect("/decks");
 }
 
 export async function addCard(deckId: string, card: NewCardInput) {

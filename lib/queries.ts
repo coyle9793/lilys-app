@@ -141,6 +141,88 @@ export async function getExistingWordDecks(
   return result;
 }
 
+/**
+ * Home-page highlights: the newest deck, the deck the user has been doing
+ * worst on (lowest average SM-2 ease among decks with review history), and
+ * the folder containing their most recently studied deck.
+ */
+export async function getHomeHighlights(
+  supabase: SupabaseClient,
+  userId: string,
+  decks: { deck: Deck; cardCount: number }[],
+  folders: Folder[],
+) {
+  if (decks.length === 0) {
+    return { newestDeck: null, weakestDeck: null, recentFolder: null };
+  }
+
+  const deckById = new Map(decks.map((d) => [d.deck.id, d.deck]));
+  const cardCountByDeck = new Map(decks.map((d) => [d.deck.id, d.cardCount]));
+
+  const { data: cardRows, error: cardsError } = await supabase
+    .from("cards")
+    .select("id, deck_id")
+    .in("deck_id", decks.map((d) => d.deck.id));
+  if (cardsError) throw new Error(cardsError.message);
+
+  const deckIdByCard = new Map((cardRows ?? []).map((c) => [c.id as string, c.deck_id as string]));
+  const cardIds = (cardRows ?? []).map((c) => c.id as string);
+
+  const { data: progressRows, error: progressError } =
+    cardIds.length > 0
+      ? await supabase
+          .from("card_progress")
+          .select("card_id, ease, last_reviewed_at")
+          .eq("user_id", userId)
+          .in("card_id", cardIds)
+      : { data: [] as { card_id: string; ease: number; last_reviewed_at: string | null }[], error: null };
+  if (progressError) throw new Error(progressError.message);
+
+  const reviewed = (progressRows ?? []).filter((r) => r.last_reviewed_at);
+
+  // decks are pre-sorted newest first (see getDecksWithCounts)
+  const newestDeck = { deck: decks[0].deck, cardCount: decks[0].cardCount };
+
+  const easeSumByDeck = new Map<string, number>();
+  const easeCountByDeck = new Map<string, number>();
+  for (const row of reviewed) {
+    const deckId = deckIdByCard.get(row.card_id);
+    if (!deckId) continue;
+    easeSumByDeck.set(deckId, (easeSumByDeck.get(deckId) ?? 0) + row.ease);
+    easeCountByDeck.set(deckId, (easeCountByDeck.get(deckId) ?? 0) + 1);
+  }
+
+  let weakestDeckId: string | null = null;
+  let weakestAvgEase = Infinity;
+  for (const [deckId, sum] of easeSumByDeck) {
+    const avg = sum / (easeCountByDeck.get(deckId) ?? 1);
+    if (avg < weakestAvgEase) {
+      weakestAvgEase = avg;
+      weakestDeckId = deckId;
+    }
+  }
+  const weakestDeck =
+    weakestDeckId && deckById.has(weakestDeckId)
+      ? { deck: deckById.get(weakestDeckId)!, cardCount: cardCountByDeck.get(weakestDeckId) ?? 0 }
+      : null;
+
+  const reviewedSorted = [...reviewed].sort(
+    (a, b) => new Date(b.last_reviewed_at!).getTime() - new Date(a.last_reviewed_at!).getTime(),
+  );
+  let recentFolder: { folder: Folder; deckCount: number } | null = null;
+  for (const row of reviewedSorted) {
+    const deckId = deckIdByCard.get(row.card_id);
+    const deck = deckId ? deckById.get(deckId) : null;
+    if (!deck?.folder_id) continue;
+    const folder = folders.find((f) => f.id === deck.folder_id);
+    if (!folder) continue;
+    recentFolder = { folder, deckCount: decks.filter((d) => d.deck.folder_id === folder.id).length };
+    break;
+  }
+
+  return { newestDeck, weakestDeck, recentFolder };
+}
+
 export async function getProgressForCards(
   supabase: SupabaseClient,
   userId: string,

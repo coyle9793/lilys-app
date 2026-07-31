@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getDecksWithCounts, getFolders } from "@/lib/queries";
 import { FolderRow } from "@/components/FolderRow";
+import HomeNav from "@/components/HomeNav";
 
 export default async function FoldersPage() {
   const supabase = await createClient();
@@ -23,12 +23,8 @@ export default async function FoldersPage() {
 
   return (
     <div className="w-full max-w-2xl px-6 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">All folders</h1>
-        <Link href="/dashboard" className="text-sm text-zinc-500 hover:underline">
-          ← Back to dashboard
-        </Link>
-      </div>
+      <HomeNav active="folders" />
+      <h1 className="mb-6 text-2xl font-semibold">All folders</h1>
 
       {folders.length === 0 ? (
         <p className="text-sm text-zinc-500">You don&apos;t have any folders yet.</p>
@@ -39,7 +35,7 @@ export default async function FoldersPage() {
               key={folder.id}
               folder={folder}
               count={deckCountByFolder.get(folder.id) ?? 0}
-              href={`/dashboard?folder=${folder.id}`}
+              href={`/decks?folder=${folder.id}`}
             />
           ))}
         </div>

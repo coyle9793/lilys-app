@@ -18,6 +18,8 @@ export async function createFolder(name: string) {
   const { error } = await supabase.from("folders").insert({ user_id: user.id, name });
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
+  revalidatePath("/decks");
+  revalidatePath("/folders");
 }
 
 export async function renameFolder(folderId: string, name: string) {
@@ -25,6 +27,8 @@ export async function renameFolder(folderId: string, name: string) {
   const { error } = await supabase.from("folders").update({ name }).eq("id", folderId);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
+  revalidatePath("/decks");
+  revalidatePath("/folders");
 }
 
 /** Deletes the folder only — decks inside it fall back to "No folder" rather than being deleted. */
@@ -33,4 +37,6 @@ export async function deleteFolder(folderId: string) {
   const { error } = await supabase.from("folders").delete().eq("id", folderId);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
+  revalidatePath("/decks");
+  revalidatePath("/folders");
 }
