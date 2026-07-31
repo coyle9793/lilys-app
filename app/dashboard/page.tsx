@@ -53,12 +53,15 @@ export default async function DashboardPage() {
           {decks.map(({ deck, cardCount, dueCount }) => (
             <li
               key={deck.id}
-              className="flex items-center justify-between rounded-lg border border-black/10 bg-card p-4 dark:border-white/10"
+              className="relative flex items-center justify-between rounded-lg border border-black/10 bg-card p-4 transition-colors hover:border-black/20 dark:border-white/10 dark:hover:border-white/20"
             >
+              <Link
+                href={`/decks/${deck.id}`}
+                className="absolute inset-0 rounded-lg"
+                aria-label={`Open ${deck.title}`}
+              />
               <div>
-                <Link href={`/decks/${deck.id}`} className="font-medium hover:underline">
-                  {deck.title}
-                </Link>
+                <span className="font-medium">{deck.title}</span>
                 <p className="text-sm text-zinc-500">{cardCount} cards</p>
               </div>
               <div className="flex items-center gap-3">
@@ -69,7 +72,7 @@ export default async function DashboardPage() {
                 )}
                 <Link
                   href={`/decks/${deck.id}/study`}
-                  className="rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/15"
+                  className="relative z-10 rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/15"
                 >
                   Study
                 </Link>
