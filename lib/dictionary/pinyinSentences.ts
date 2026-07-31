@@ -15,7 +15,7 @@ const HAN_CHAR = /\p{Script=Han}/u;
  * hanzi and pinyin apart correctly instead of treating the whole raw line as
  * a single opaque "word".
  */
-function looksLikePinyin(line: string): boolean {
+export function looksLikePinyin(line: string): boolean {
   if (HAN_CHAR.test(line)) return false;
   if (TONE_MARK.test(line)) return true;
 
