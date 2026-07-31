@@ -73,7 +73,7 @@ export default function CardList({ deckId, cards }: { deckId: string; cards: Car
     <div className="flex flex-col gap-2">
       {cards.map((card) =>
         editingId === card.id ? (
-          <div key={card.id} className="rounded-md border border-black/10 p-2 dark:border-white/10">
+          <div key={card.id} className="rounded-md border border-black/10 bg-background p-2 dark:border-white/10">
             <CardForm
               initial={card}
               submitLabel="Save"
@@ -87,7 +87,7 @@ export default function CardList({ deckId, cards }: { deckId: string; cards: Car
         ) : (
           <div
             key={card.id}
-            className="grid grid-cols-1 items-center gap-1 rounded-md border border-black/10 p-3 sm:grid-cols-[1fr_1fr_2fr_auto] sm:gap-2 dark:border-white/10"
+            className="grid grid-cols-1 items-center gap-1 rounded-md border border-black/10 bg-background p-3 sm:grid-cols-[1fr_1fr_2fr_auto] sm:gap-2 dark:border-white/10"
           >
             <span className="text-lg">{card.hanzi}</span>
             <span className="text-zinc-500">{card.pinyin}</span>
@@ -113,7 +113,7 @@ export default function CardList({ deckId, cards }: { deckId: string; cards: Car
       )}
 
       {adding ? (
-        <div className="rounded-md border border-black/10 p-2 dark:border-white/10">
+        <div className="rounded-md border border-black/10 bg-background p-2 dark:border-white/10">
           <CardForm
             initial={{ hanzi: "", pinyin: "", definition: "" }}
             submitLabel="Add"

@@ -9,7 +9,7 @@ export default function SignupPage() {
 
   return (
     <div className="flex flex-1 items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-xl border border-black/10 p-8 dark:border-white/10">
+      <div className="w-full max-w-sm rounded-xl border border-black/10 bg-background p-8 dark:border-white/10">
         <h1 className="mb-6 text-2xl font-semibold">Sign up</h1>
         <form action={formAction} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm">

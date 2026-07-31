@@ -11,7 +11,10 @@ export default async function NavBar() {
   } = await supabase.auth.getUser();
 
   return (
-    <header className="flex items-center justify-between border-b border-black/10 px-6 py-4 dark:border-white/10">
+    <header
+      className="flex items-center justify-between border-b border-black/10 px-6 py-4 dark:border-white/10"
+      style={{ background: "var(--accent-btn-bg)" }}
+    >
       <Link
         href={user ? "/dashboard" : "/"}
         className="text-lg font-semibold"
