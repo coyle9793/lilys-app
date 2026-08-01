@@ -32,7 +32,7 @@ export default function BadgesGrid({ stats }: { stats: BadgeStats }) {
   const earnedCount = BADGES.filter((b) => b.isEarned(stats)).length;
 
   return (
-    <div className="w-full shrink-0 rounded-xl border border-black/10 bg-card p-4 sm:w-56">
+    <div className="w-full shrink-0 rounded-xl border border-black/10 bg-card p-4 lg:w-56">
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
         Badges ({earnedCount}/{BADGES.length})
       </p>
