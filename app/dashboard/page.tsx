@@ -32,8 +32,8 @@ export default async function DashboardPage() {
     <div className="w-full max-w-7xl px-6 py-10">
       <HomeNav active="home" />
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 max-w-2xl flex-1">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1">
           {decks.length === 0 ? (
             <div className="rounded-lg border border-dashed border-black/15 p-10 text-center text-zinc-500 dark:border-white/15">
               <p>No decks yet.</p>
