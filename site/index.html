@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2027 Grad Jobs Finder</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>2027 Grad Jobs Finder</h1>
+    <p class="subtitle">UK graduate schemes &amp; programmes for 2027, pulled from Adzuna and Reed.</p>
+    <p id="meta" class="meta">Loading...</p>
+  </header>
+
+  <main>
+    <div class="controls">
+      <input id="search" type="search" placeholder="Search title, company, location..." />
+      <select id="sourceFilter">
+        <option value="">All sources</option>
+        <option value="adzuna">Adzuna</option>
+        <option value="reed">Reed</option>
+      </select>
+      <select id="sortOrder">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+      </select>
+    </div>
+
+    <p id="count" class="count"></p>
+    <ul id="jobList" class="job-list"></ul>
+    <p id="empty" class="empty" hidden>No jobs found yet. Once the fetch workflow has run at least once, results will appear here.</p>
+  </main>
+
+  <footer>
+    <p>Runs automatically every 2 hours via GitHub Actions. New roles trigger an email alert.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
