@@ -32,72 +32,74 @@ export default async function DashboardPage() {
     <div className="w-full max-w-5xl px-6 py-10">
       <HomeNav active="home" />
 
-      {decks.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-black/15 p-10 text-center text-zinc-500 dark:border-white/15">
-          <p>No decks yet.</p>
-          <p className="mt-1 text-sm">Upload a slide deck, PDF, or photo to generate your first flashcards.</p>
-          <Link
-            href="/decks/new"
-            className="mt-4 inline-block rounded-md px-4 py-2 text-sm font-medium"
-            style={{ background: "var(--accent-btn-solid-bg)", color: "var(--accent-btn-solid-text)" }}
-          >
-            + Import slides
-          </Link>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {weakestDeck ? (
-            <HeroCard
-              kicker="Needs practice"
-              title={weakestDeck.deck.title}
-              sub="This deck has been trickier in your recent study sessions — worth another pass."
-              buttonLabel="Retry now"
-              href={`/decks/${weakestDeck.deck.id}/study`}
-            />
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="min-w-0 flex-1">
+          {decks.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-black/15 p-10 text-center text-zinc-500 dark:border-white/15">
+              <p>No decks yet.</p>
+              <p className="mt-1 text-sm">Upload a slide deck, PDF, or photo to generate your first flashcards.</p>
+              <Link
+                href="/decks/new"
+                className="mt-4 inline-block rounded-md px-4 py-2 text-sm font-medium"
+                style={{ background: "var(--accent-btn-solid-bg)", color: "var(--accent-btn-solid-text)" }}
+              >
+                + Import slides
+              </Link>
+            </div>
           ) : (
-            newestDeck && (
-              <HeroCard
-                kicker="Start here"
-                title={newestDeck.deck.title}
-                sub="You haven't studied yet — start with your newest deck."
-                buttonLabel="Study now"
-                href={`/decks/${newestDeck.deck.id}/study`}
-              />
-            )
+            <div className="flex flex-col gap-4">
+              {weakestDeck ? (
+                <HeroCard
+                  kicker="Needs practice"
+                  title={weakestDeck.deck.title}
+                  sub="This deck has been trickier in your recent study sessions — worth another pass."
+                  buttonLabel="Retry now"
+                  href={`/decks/${weakestDeck.deck.id}/study`}
+                />
+              ) : (
+                newestDeck && (
+                  <HeroCard
+                    kicker="Start here"
+                    title={newestDeck.deck.title}
+                    sub="You haven't studied yet — start with your newest deck."
+                    buttonLabel="Study now"
+                    href={`/decks/${newestDeck.deck.id}/study`}
+                  />
+                )
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {newestDeck && (
+                  <Tile
+                    kicker="Newest deck"
+                    title={newestDeck.deck.title}
+                    sub={`${newestDeck.cardCount} card${newestDeck.cardCount === 1 ? "" : "s"}`}
+                    buttonLabel="Study"
+                    href={`/decks/${newestDeck.deck.id}/study`}
+                  />
+                )}
+                {recentFolder ? (
+                  <Tile
+                    kicker="Recent folder"
+                    title={recentFolder.folder.name}
+                    sub={`${recentFolder.deckCount} deck${recentFolder.deckCount === 1 ? "" : "s"}`}
+                    buttonLabel="Open folder"
+                    href={`/decks?folder=${recentFolder.folder.id}`}
+                  />
+                ) : (
+                  <Tile
+                    kicker="Folders"
+                    title="No folder activity yet"
+                    sub="Study a deck inside a folder to see it here."
+                    buttonLabel="Browse folders"
+                    href="/folders"
+                  />
+                )}
+              </div>
+            </div>
           )}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {newestDeck && (
-              <Tile
-                kicker="Newest deck"
-                title={newestDeck.deck.title}
-                sub={`${newestDeck.cardCount} card${newestDeck.cardCount === 1 ? "" : "s"}`}
-                buttonLabel="Study"
-                href={`/decks/${newestDeck.deck.id}/study`}
-              />
-            )}
-            {recentFolder ? (
-              <Tile
-                kicker="Recent folder"
-                title={recentFolder.folder.name}
-                sub={`${recentFolder.deckCount} deck${recentFolder.deckCount === 1 ? "" : "s"}`}
-                buttonLabel="Open folder"
-                href={`/decks?folder=${recentFolder.folder.id}`}
-              />
-            ) : (
-              <Tile
-                kicker="Folders"
-                title="No folder activity yet"
-                sub="Study a deck inside a folder to see it here."
-                buttonLabel="Browse folders"
-                href="/folders"
-              />
-            )}
-          </div>
         </div>
-      )}
 
-      <div className="mt-8">
         <BadgesGrid stats={badgeStats} />
       </div>
     </div>
