@@ -34,10 +34,52 @@ export async function getFolders(supabase: SupabaseClient, userId: string) {
   return data as Folder[];
 }
 
-export async function getCoins(supabase: SupabaseClient, userId: string): Promise<number> {
-  const { data, error } = await supabase.from("profiles").select("coins").eq("id", userId).maybeSingle();
+export interface ProfileStats {
+  coins: number;
+  currentStreak: number;
+  longestStreak: number;
+}
+
+export async function getProfile(supabase: SupabaseClient, userId: string): Promise<ProfileStats> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("coins, current_streak, longest_streak")
+    .eq("id", userId)
+    .maybeSingle();
   if (error) throw new Error(error.message);
-  return data?.coins ?? 0;
+  return {
+    coins: data?.coins ?? 0,
+    currentStreak: data?.current_streak ?? 0,
+    longestStreak: data?.longest_streak ?? 0,
+  };
+}
+
+export interface BadgeStats {
+  deckCount: number;
+  folderCount: number;
+  noteCount: number;
+  reviewedCardCount: number;
+  coins: number;
+  longestStreak: number;
+}
+
+/** Stats used to work out which badges a user has earned — see lib/badges.ts. */
+export async function getBadgeStats(supabase: SupabaseClient, userId: string): Promise<BadgeStats> {
+  const [decks, folders, notes, reviewedCards, profile] = await Promise.all([
+    supabase.from("decks").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("folders").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("notes").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("card_progress").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    getProfile(supabase, userId),
+  ]);
+  return {
+    deckCount: decks.count ?? 0,
+    folderCount: folders.count ?? 0,
+    noteCount: notes.count ?? 0,
+    reviewedCardCount: reviewedCards.count ?? 0,
+    coins: profile.coins,
+    longestStreak: profile.longestStreak,
+  };
 }
 
 export async function getNotes(supabase: SupabaseClient, userId: string) {

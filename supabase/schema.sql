@@ -40,7 +40,10 @@ create table if not exists card_progress (
 
 create table if not exists profiles (
   id uuid primary key references auth.users (id) on delete cascade,
-  coins integer not null default 0
+  coins integer not null default 0,
+  current_streak integer not null default 0,
+  longest_streak integer not null default 0,
+  last_active_date date
 );
 
 create table if not exists notes (

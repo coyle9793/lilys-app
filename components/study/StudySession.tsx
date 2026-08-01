@@ -6,6 +6,8 @@ import type { Card } from "@/lib/types";
 import type { Grade } from "@/lib/srs/sm2";
 import { recordReview } from "@/lib/actions/study";
 import { awardCoinsForSession } from "@/lib/actions/coins";
+import { recordStudyActivity } from "@/lib/actions/streak";
+import { localDateString } from "@/lib/date";
 import { shuffle } from "./shuffle";
 import Flashcard from "./Flashcard";
 import MultipleChoice from "./MultipleChoice";
@@ -103,6 +105,7 @@ export default function StudySession({
     if (queue && nextIndex === queue.length) {
       const correctCount = queue.length - updatedSessionGroups.again.length;
       await awardCoinsForSession(queue.length, correctCount);
+      await recordStudyActivity(localDateString());
     }
   }
 

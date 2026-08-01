@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getDecksWithCounts, getFolders, getHomeHighlights } from "@/lib/queries";
+import { getBadgeStats, getDecksWithCounts, getFolders, getHomeHighlights } from "@/lib/queries";
 import HomeNav from "@/components/HomeNav";
+import BadgesGrid from "@/components/BadgesGrid";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -16,6 +17,16 @@ export default async function DashboardPage() {
   // that haven't run the folders migration (supabase/migrations/0001_add_folders.sql) yet.
   const folders = await getFolders(supabase, user.id).catch(() => []);
   const { newestDeck, weakestDeck, recentFolder } = await getHomeHighlights(supabase, user.id, decks, folders);
+  // Falls back to all-zero stats (rather than a broken page) for accounts
+  // that haven't run the streaks migration (supabase/migrations/0005_add_streaks.sql) yet.
+  const badgeStats = await getBadgeStats(supabase, user.id).catch(() => ({
+    deckCount: decks.length,
+    folderCount: folders.length,
+    noteCount: 0,
+    reviewedCardCount: 0,
+    coins: 0,
+    longestStreak: 0,
+  }));
 
   return (
     <div className="w-full max-w-5xl px-6 py-10">
@@ -85,6 +96,10 @@ export default async function DashboardPage() {
           </div>
         </div>
       )}
+
+      <div className="mt-8">
+        <BadgesGrid stats={badgeStats} />
+      </div>
     </div>
   );
 }

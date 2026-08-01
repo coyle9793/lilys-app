@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { ExamMode, ExamQuestion, GeneratedExam } from "@/lib/ai/examGenerator";
 import { classifyMark, type WritingFeedback } from "@/lib/ai/writingScore";
 import { awardExamCoins } from "@/lib/actions/coins";
+import { recordStudyActivity } from "@/lib/actions/streak";
+import { localDateString } from "@/lib/date";
 
 type Step = "setup" | "taking" | "results";
 
@@ -129,6 +131,7 @@ export default function ExamClient({
           ? updatedWritingCharCounts.reduce((sum, c) => sum + Math.floor(c / CHARS_PER_COIN), 0)
           : updatedResults.filter(Boolean).length * COINS_PER_CORRECT[mode];
       if (coins > 0) awardExamCoins(coins);
+      recordStudyActivity(localDateString());
     } else {
       setIndex((i) => i + 1);
     }
